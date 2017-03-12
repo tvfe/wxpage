@@ -1,0 +1,11 @@
+{
+  "name": "wxpage",
+  "version": "1.0.0",
+  "description": "Components lib for weixin tinyapp.",
+  "main": "page.js",
+  "scripts": {
+    "test": "node test/index"
+  },
+  "author": "vfe",
+  "license": "MIT"
+}

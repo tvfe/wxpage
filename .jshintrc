@@ -1,0 +1,7 @@
+{
+	"globals": {
+		"Page": true,
+		"getCurrentPages": true,
+		"getApp": true
+	}
+}
