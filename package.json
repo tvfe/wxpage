@@ -4,7 +4,7 @@
   "description": "Components lib for weixin tinyapp.",
   "main": "page.js",
   "scripts": {
-    "test": "node test/index"
+    "test": "mocha test/index"
   },
   "author": "vfe",
   "license": "MIT"
