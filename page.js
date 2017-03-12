@@ -29,7 +29,7 @@ function WXPage(name, option) {
 
 	if (option.onPreload){
 		console.log(`Page ${name} definds an onPreload`)
-		redirector.on('preLoad', function (url) {
+		redirector.on('preload', function (url) {
 			if (PAGE_ROUTE.test(url)) {
 				option.onPreload.call(option, {
 					url: url,
@@ -40,8 +40,8 @@ function WXPage(name, option) {
 	}
 
 	//预加载某个页面，如首页调用该方法，预加载频道页
-	option.$preLoad = function(url){
-		redirector.preLoad(url)
+	option.$preload = function(url){
+		redirector.preload(url)
 	}
 	/**
 	 * Instance props
