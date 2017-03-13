@@ -1,0 +1,14 @@
+{
+	"pages": [
+		"pages/index"
+	],
+	"window": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "WXPage",
+		"navigationBarBackgroundColor": "#fff",
+		"backgroundColor": "#fff",
+		"backgroundTextStyle" : "dark",
+		"enablePullDownRefresh" : true
+	},
+	"debug": true
+}

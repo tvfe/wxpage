@@ -4,8 +4,12 @@
   "description": "Components lib for weixin tinyapp.",
   "main": "page.js",
   "scripts": {
+    "start": "webpack page.js test/tinyapp/lib/wxpage.js --watch --output-library-target='commonjs-module'",
     "test": "mocha test/index"
   },
   "author": "vfe",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "webpack": "^2.2.1"
+  }
 }

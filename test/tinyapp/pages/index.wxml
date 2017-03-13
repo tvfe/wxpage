@@ -1,0 +1,6 @@
+<import src="/comps/header.wxml" />
+
+<view class="wxpage">
+	<template is="header" data="{{...header1}}"></template>
+	<template is="header" data="{{...header2}}"></template>
+</view>

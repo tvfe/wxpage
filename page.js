@@ -4,7 +4,9 @@ var fns = require('./lib/fns.js')
 var message = require('./lib/message')
 var redirector = require('./lib/redirector')
 var Component = require('./lib/component.js')
-var routeConfig = require('../config/route.js')
+var routeConfig = {
+	index: 'pages/index'
+}
 var channel = {}
 // 专题页的入口可能不是index哦
 var HOME_PAGE = 'index'
@@ -178,5 +180,5 @@ function route ({type}) {
     	redirector[type](config);
 	}
 }
-
+WXPage.Component = Component
 module.exports = WXPage
