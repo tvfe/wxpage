@@ -1,13 +1,13 @@
 var C = require('../lib/wxpage').Component
-
-module.exports = C('header', function (name) {
+var id = 1
+module.exports = C('header', function (vm) {
 	return {
-		name,
 		data: {
 			title: 'header~'
 		},
 		onLoad: function () {
-			console.log('On header load')
+			console.log('On header load~')
+			vm.$set({'title': 'header'+id++})
 		}
 	}
 })

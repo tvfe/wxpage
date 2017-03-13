@@ -399,23 +399,39 @@ function component(name, ctor/*[ ctor ]*/) {
 		ctor = name
 		name = ''
 	}
-	return function () {
+	return function (cid) {
+		var vm
 		var def = fns.type(ctor) == 'function'
-			? ctor.apply(this, arguments)
+			? ctor.call(this, {
+				$set: function (data) {
+					if (!cid || !vm) return
+					vm.$setData(cid, data)
+				}
+			})
 			: fns.extend({}, ctor)
+
+		def.onLoad = fns.wrapFun(def.onLoad, function () {
+			vm = this
+		})
 
 		if (!def) {
 			// 容错，不抛错
 			console.error(`Illegal component options [${name || 'Anonymous'}]`)
 			def = {}
 		}
-		name = def.name || name
 		useComponents(def, def.comps, `Component[${name || 'Anonymous'}]`)
+		cid = cid || def.id || name
+
+		if (!cid) {
+			// 容错，不抛错
+			console.error(`Illegal component id [${name || 'Anonymous'}]`)
+		}
+
 		delete def.comps
-		delete def.name
-		if (name && def.data) {
+		delete def.id
+		if (cid && def.data) {
 			var data = {}
-			data[name] = def.data
+			data[cid] = def.data
 			def.data = data
 		}
 		return def
