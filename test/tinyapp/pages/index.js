@@ -3,7 +3,7 @@ var Header = require('../comps/header')
 P('index', {
 	comps: [
 		Header('header1'),
-		Header('header2'),
+		Header('header2')
 	],
 	data: {
 
