@@ -1,4 +1,4 @@
-var C = require('../lib/wxpage').Component
+var C = require('../lib/wxpage').C
 var id = 1
 module.exports = C('header', function (vm) {
 	return {
