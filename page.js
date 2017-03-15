@@ -13,9 +13,8 @@ var hideTime = 0;
 var MIN15 = 900000; // 15*60*1000
 function WXPage(name, option) {
 	const PAGE_PATH = getPagePath(name)
-											.replace(/^\/?/, '/')
+											.replace(/^\/?/, '/?')
 	const PAGE_ROUTE = new RegExp(`^${PAGE_PATH}`)
-
 	// mixin component defs
 	Component.use(option, option.comps, `Page[${name}]`)
 
@@ -155,7 +154,7 @@ function WXPage(name, option) {
 }
 function Application (option) {
 	if (option.config) {
-		WXPage.config(option)
+		WXPage.config(option.config)
 	}
 	/**
 	 * APP long sleep logical
@@ -196,13 +195,7 @@ function back() {
  * Get page.js path by pagename
  */
 function getPagePath(name) {
-		var pagepath
-		if (routeResolve) {
-			pagepath = routeResolve(name)
-		} else {
-			pagepath = routes[name]
-		}
-		return name
+	return routeResolve ? routeResolve(name) : routes[name]
 }
 /**
  * Navigate handler
@@ -246,13 +239,13 @@ function _conf(k, v) {
 			break
 	}
 }
-WXPage.config = function (key, v) {
+WXPage.config = function (key, value) {
 	if (fns.type(key) == 'object') {
-		fns.objEach(function (k, v) {
+		fns.objEach(key, function (k, v) {
 			_conf(k, v)
 		})
 	} else {
-		_conf(key, v)
+		_conf(key, value)
 	}
 	return this
 }
