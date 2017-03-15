@@ -12,8 +12,7 @@ var hasPageLoaded = 0
 var hideTime = 0;
 var MIN15 = 900000; // 15*60*1000
 function WXPage(name, option) {
-	const PAGE_PATH = getPagePath(name)
-											.replace(/^\/?/, '/?')
+	const PAGE_PATH = getPagePath(name).replace(/^\/?/, '/?')
 	const PAGE_ROUTE = new RegExp(`^${PAGE_PATH}`)
 	// mixin component defs
 	Component.use(option, option.comps, `Page[${name}]`)
