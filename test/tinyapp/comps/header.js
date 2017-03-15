@@ -6,8 +6,11 @@ module.exports = C('header', function (vm) {
 			title: 'header~'
 		},
 		onLoad: function () {
-			console.log('On header load~')
+			console.log('On header load~', this.data)
 			vm.$set({'title': 'header'+id++})
+		},
+		onTap: function (e) {
+			console.log(e)
 		}
 	}
 })

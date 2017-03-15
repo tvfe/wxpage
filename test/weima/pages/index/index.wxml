@@ -1,0 +1,6 @@
+<import src="/comps/header/index.wxml" />
+
+<view>
+	<template is="header" data="{{...header, page: 'Index'}}"></template>
+	<button bindtap="onPlay">Go go play page</button>
+</view>

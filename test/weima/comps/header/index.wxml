@@ -1,0 +1,3 @@
+<template name="header">
+	<view style="margin-bottom: 50rpx;text-align: center;"><icon type="success" size="20"/>[{{page}}]{{title}}</view>
+</template>

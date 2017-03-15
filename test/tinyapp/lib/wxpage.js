@@ -428,6 +428,7 @@ function component(name, ctor/*[ ctor ]*/) {
 		if (cid && def.data) {
 			var data = {}
 			data[cid] = def.data
+			data[cid].$id = cid
 			def.data = data
 		}
 		return def
