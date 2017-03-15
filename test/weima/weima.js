@@ -51,12 +51,6 @@ function WXPage(name, option) {
 	option.$redirect = _$route({type: 'redirectTo'})
 	option.$switch = _$route({type: 'switchTab'})
 
-	option.$state = {
-		// 是否小程序被打开首页启动页面
-		firstOpen: false,
-		// 是否由分享打开的首个启动页面
-		firstShareOpen: false
-	}
 	/**
 	 * 存一次，取一次
 	 */
