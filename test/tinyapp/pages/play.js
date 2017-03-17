@@ -1,5 +1,7 @@
 var P = require('../lib/wxpage')
 var Header = require('../comps/header')
+
+
 P('play', {
 	data: {
 

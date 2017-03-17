@@ -380,6 +380,7 @@ function useComponents(option, comps, label) {
 						case 'onNavigate':
 						case 'onAwake':
 						case 'onPreload':
+						case 'onLaunch':
 						// case 'fetchData':
 							option[k] = fns.wrapFun(option[k], v)
 							return
@@ -486,10 +487,7 @@ exportee.switchTab = function (cfg) {
 	return route('switchTab', cfg, arguments)
 }
 exportee.navigateBack = function () {
-    return wx.navigateBack.apply(wx, arguments)
-}
-exportee.preload = function(url){
-	exportee.emit('preload', url)
+  return wx.navigateBack.apply(wx, arguments)
 }
 
 
@@ -506,44 +504,45 @@ var redirector = __webpack_require__(3)
 var Component = __webpack_require__(2)
 var dispatcher = new message()
 var channel = {}
-var HOME_PAGE = 'index'
+var homePage
 var hasPageLoaded = 0
 var hideTime = 0;
 var MIN15 = 900000; // 15*60*1000
 var routeResolve
 var nameResolve
 
+
 function WXPage(name, option) {
+	// the first time execute page is the home page
+	if (!homePage) homePage = name
+
 	const PAGE_PATH = routeResolve(name).replace(/^\/?/, '/?')
-	const PAGE_ROUTE = new RegExp(`^${PAGE_PATH}`)
 	// mixin component defs
 	Component.use(option, option.comps, `Page[${name}]`)
-
 	if (option.onNavigate){
-		dispatcher.on('navigateTo:'+name, function (url) {
-			option.onNavigate.call(option, {
-				url: url,
-				query: fns.queryParse(url.split('?')[1] || '')
-			})
-		})
+		let onNavigateHandler = function (url, query) {
+			option.onNavigate({url, query})
+		}
+		console.log(`Page[${name}] define a "navigateTo" method.`)
+		dispatcher.on('navigateTo:'+name, onNavigateHandler)
+		dispatcher.on('redirectTo:'+name, onNavigateHandler)
+		dispatcher.on('switchTab:'+name, onNavigateHandler)
 	}
 	/**
 	 * Preload lifecycle method
 	 */
 	if (option.onPreload){
-		console.log(`Page[${name}] set an "onPreload" method.`)
-		dispatcher.on('preload:'+name, function (url) {
-			option.onPreload.call(option, {
-				url: url,
-				query: fns.queryParse(url.split('?')[1] || '')
-			})
+		console.log(`Page[${name}] define an "onPreload" method.`)
+		dispatcher.on('preload:'+name, function (url, query) {
+			option.onPreload({url, query})
 		})
 	}
 	/**
 	 * Preload another page in current page
 	 */
 	option.$preload = function(url){
-		redirector.preload(url)
+		var name = getPageName(url)
+		name && dispatcher.emit('preload:'+name, url, fns.queryParse(url.split('?')[1]))
 	}
 	/**
 	 * Instance props
@@ -646,6 +645,11 @@ function WXPage(name, option) {
 	option.onReady = fns.wrapFun(option.onReady, function () {
 		redirector.emit('page:ready')
 	})
+
+	// call on launch
+	if (option.onLaunch) {
+		option.onLaunch()
+	}
 	Page(option);
 	return option;
 }
@@ -653,11 +657,11 @@ function pageRedirectorDelegate(emitter, keys) {
 	keys.forEach(function (k) {
 		emitter.on(k, function (url) {
 			var name = getPageName(url)
-			name && dispatcher.emit(k+':'+name, url)
+			name && dispatcher.emit(k+':'+name, url, fns.queryParse(url.split('?')[1]))
 		})
 	})
 }
-pageRedirectorDelegate(redirector, ['navigateTo', 'preload'])
+pageRedirectorDelegate(redirector, ['navigateTo', 'redirectTo', 'switchTab'])
 
 /**
  * Application wrapper
@@ -692,13 +696,13 @@ function Application (option) {
  * Redirect functions
  */
 function home(q) {
-	this.$switch(HOME_PAGE + (q ? '?' + fns.queryStringify(q) :''))
+	this.$switch(homePage + (q ? '?' + fns.queryStringify(q) :''))
 }
 function back() {
 	if (getCurrentPages().length > 1) {
 		wx.navigateBack()
 	} else {
-		this.$switch(HOME_PAGE)
+		this.$switch(homePage)
 	}
 }
 /**
@@ -734,11 +738,11 @@ WXPage.A = WXPage.App = WXPage.Application = Application
 function _conf(k, v) {
 	switch(k) {
 		case 'home':
-			HOME_PAGE = v
+			homePage = v
 			break
 		case 'route':
 			if (fns.type(v) == 'string') {
-					var PATH_REG = new RegExp('^'+v.replace(/[\.]/g, '\\.').replace('$page', '([\\w\\-]+)'))
+					var PATH_REG = new RegExp('^'+v.replace(/^\/?/, '/?').replace(/[\.]/g, '\\.').replace('$page', '([\\w\\-]+)'))
 					routeResolve = function (name) {
 						return v.replace('$page', name)
 					}
