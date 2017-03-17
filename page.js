@@ -4,42 +4,40 @@ var fns = require('./lib/fns.js')
 var message = require('./lib/message')
 var redirector = require('./lib/redirector')
 var Component = require('./lib/component.js')
-var routes = {}
-var routeResolve
+var dispatcher = new message()
 var channel = {}
 var HOME_PAGE = 'index'
 var hasPageLoaded = 0
 var hideTime = 0;
 var MIN15 = 900000; // 15*60*1000
+var routeResolve
+var nameResolve
+
 function WXPage(name, option) {
-	const PAGE_PATH = getPagePath(name).replace(/^\/?/, '/?')
+	const PAGE_PATH = routeResolve(name).replace(/^\/?/, '/?')
 	const PAGE_ROUTE = new RegExp(`^${PAGE_PATH}`)
 	// mixin component defs
 	Component.use(option, option.comps, `Page[${name}]`)
 
 	if (option.onNavigate){
-		redirector.on('navigateTo', function (url) {
-			if ( PAGE_ROUTE.test(url)) {
-				option.onNavigate.call(option, {
-					url: url,
-					query: fns.queryParse(url.split('?')[1] || '')
-				});
-			}
-		});
+		dispatcher.on('navigateTo:'+name, function (url) {
+			option.onNavigate.call(option, {
+				url: url,
+				query: fns.queryParse(url.split('?')[1] || '')
+			})
+		})
 	}
 	/**
 	 * Preload lifecycle method
 	 */
 	if (option.onPreload){
 		console.log(`Page[${name}] set an "onPreload" method.`)
-		redirector.on('preload', function (url) {
-			if (PAGE_ROUTE.test(url)) {
-				option.onPreload.call(option, {
-					url: url,
-					query: fns.queryParse(url.split('?')[1] || '')
-				});
-			}
-		});
+		dispatcher.on('preload:'+name, function (url) {
+			option.onPreload.call(option, {
+				url: url,
+				query: fns.queryParse(url.split('?')[1] || '')
+			})
+		})
 	}
 	/**
 	 * Preload another page in current page
@@ -151,6 +149,19 @@ function WXPage(name, option) {
 	Page(option);
 	return option;
 }
+function pageRedirectorDelegate(emitter, keys) {
+	keys.forEach(function (k) {
+		emitter.on(k, function (url) {
+			var name = getPageName(url)
+			name && dispatcher.emit(k+':'+name, url)
+		})
+	})
+}
+pageRedirectorDelegate(redirector, ['navigateTo', 'preload'])
+
+/**
+ * Application wrapper
+ */
 function Application (option) {
 	if (option.config) {
 		WXPage.config(option.config)
@@ -191,32 +202,30 @@ function back() {
 	}
 }
 /**
- * Get page.js path by pagename
- */
-function getPagePath(name) {
-	return routeResolve ? routeResolve(name) : routes[name]
-}
-/**
  * Navigate handler
  */
 function route ({type}) {
+	// url: $page[?name=value]
 	return function (url, config) {
-		// @url $page[?name=value]
 		var parts = url.split(/\?/)
-		var pagename = parts[0];
-		var matches = pagename.match(/\/?pages\/(\w+)\/index$/)
-		if (matches) {
-			pagename = matches[1]
+		var pagepath = parts[0]
+		if (/^[\w\-]+$/.test(pagepath)) {
+			pagepath = routeResolve(pagepath)
+		}
+		if (!pagepath) {
+			throw new Error('Invalid path:', pagepath)
 		}
 		config = config || {}
 		// append querystring
-		config.url = getPagePath(pagename) + (parts[1] ? '?' + parts[1] : '')
-		if (!config.url) {
-			throw new Error('Invalid pagename:', pagename)
-		}
+		config.url = pagepath + (parts[1] ? '?' + parts[1] : '')
     redirector[type](config)
 	}
 }
+function getPageName(url) {
+	var m = /^[\w\-]+(?=\?|$)/.exec(url)
+	return m ? m[0] : nameResolve(url)
+}
+
 WXPage.C = WXPage.Comp = WXPage.Component = Component
 WXPage.A = WXPage.App = WXPage.Application = Application
 /**
@@ -227,11 +236,16 @@ function _conf(k, v) {
 		case 'home':
 			HOME_PAGE = v
 			break
-		case 'routes':
-			if (fns.type(v) == 'function') {
-				routeResolve = v
-			} else if (fns.type(v) == 'object') {
-				routes = v
+		case 'route':
+			if (fns.type(v) == 'string') {
+					var PATH_REG = new RegExp('^'+v.replace(/[\.]/g, '\\.').replace('$page', '([\\w\\-]+)'))
+					routeResolve = function (name) {
+						return v.replace('$page', name)
+					}
+					nameResolve = function (url) {
+						var m = PATH_REG.exec(url)
+						return m ? m[1] : ''
+					}
 			} else {
 				console.error('Illegal routes option:', v)
 			}

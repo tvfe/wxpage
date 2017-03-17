@@ -1,8 +1,5 @@
 'use strict'
 
-var resolve = function (name) {
-	return `/pages/${name}/index`
-}
 var channel = {}
 function WXPage(name, option) {
 	const PAGE_ROUTE = new RegExp(`^/pages/${name}/index`)
@@ -14,24 +11,24 @@ function WXPage(name, option) {
 		console.log(`Page[${name}] definds an onNavigate`)
 		navigator.on('navigateTo', function (url) {
 			if (PAGE_ROUTE.test(url)) {
-				option.onNavigate.call(option, {
+				option.onNavigate({
 					url: url,
 					query: fns.queryParse(url.split('?')[1] || '')
-				});
+				})
 			}
-		});
+		})
 	}
 
 	if (option.onPreload){
 		console.log(`Page[${name}] definds an onPreload`)
 		navigator.on('preload', function (url) {
 			if (PAGE_ROUTE.test(url)) {
-				option.onPreload.call(option, {
+				option.onPreload({
 					url: url,
 					query: fns.queryParse(url.split('?')[1] || '')
-				});
+				})
 			}
-		});
+		})
 	}
 
 	//预加载某个页面，如首页调用该方法，预加载频道页
@@ -108,10 +105,17 @@ function _$route ({type}) {
 		// append querystring
 		config.url = resolve(pagename) + (parts[1] ? '?' + parts[1] : '');
 		if (!config.url) {
-			throw new Error('Invalid pagename:', pagename)
+			throw new Error('Invalid page path:', pagename)
 		}
-    	navigator[type](config);
+  	navigator[type](config);
 	}
+}
+
+/**
+ * Resolve page path by name
+ */
+function resolve(name) {
+	return `/pages/${name}/index`
 }
 
 /**
@@ -277,7 +281,6 @@ function route(type, cfg, args) {
 navigator.navigateTo = function (cfg) {
 	return route('navigateTo', cfg, arguments)
 }
-
 navigator.redirectTo = function (cfg) {
 	return route('redirectTo', cfg, arguments)
 }

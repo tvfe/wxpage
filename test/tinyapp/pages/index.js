@@ -9,6 +9,10 @@ P('index', {
 
 	},
 	onLoad: function() {
-
+		console.log('## On index page load')
+		this.$preload('play?cid=456')
+	},
+	onPlay: function () {
+		this.$route('play?cid=123')
 	}
 })

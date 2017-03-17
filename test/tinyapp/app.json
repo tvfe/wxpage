@@ -1,6 +1,7 @@
 {
 	"pages": [
-		"pages/index"
+		"pages/index",
+		"pages/play"
 	],
 	"window": {
 		"navigationBarTextStyle": "black",
