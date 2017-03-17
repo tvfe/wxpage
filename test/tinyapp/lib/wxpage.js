@@ -506,11 +506,10 @@ var dispatcher = new message()
 var channel = {}
 var homePage
 var hasPageLoaded = 0
-var hideTime = 0;
-var MIN15 = 900000; // 15*60*1000
+var hideTime = 0
+var MIN15 = 900000 // 15*60*1000
 var routeResolve
 var nameResolve
-
 
 function WXPage(name, option) {
 	// the first time execute page is the home page
@@ -523,7 +522,7 @@ function WXPage(name, option) {
 		let onNavigateHandler = function (url, query) {
 			option.onNavigate({url, query})
 		}
-		console.log(`Page[${name}] define a "navigateTo" method.`)
+		console.log(`Page[${name}] define a "onNavigate" method.`)
 		dispatcher.on('navigateTo:'+name, onNavigateHandler)
 		dispatcher.on('redirectTo:'+name, onNavigateHandler)
 		dispatcher.on('switchTab:'+name, onNavigateHandler)
