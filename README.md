@@ -54,23 +54,40 @@ var C = require('./wxpage').C
 * **定义**
 
 	示例：
+	```html
+	<template name="comp">
+		<button>It is component: {{name}}</button>
+	</template>
+	```
+
 	```js
 	var C = require('./wxpage').C
-	C('index', function (vm) {
+	C('comp', function (vm) {
 		return {
 			data: {/*...*/},
 			onLoad: function () {
 				// do something
+				vm.$set({
+					name: 'comp'
+				})
 			}
 		}
 	})
 	```
 
+* **使用组件**
+
+```html
+<import src="/path/to/comp.wxml"></import>
+
+<template is="item" data="{{...comp}}"/>
+```
+
 * **扩展的生命周期**
 
 	同页面的生命周期
 
-* **VM实例方法*
+* **VM实例方法**
 
 	- **$set({...})**
 
