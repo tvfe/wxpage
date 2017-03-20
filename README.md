@@ -188,6 +188,14 @@ var C = require('./wxpage').C
 
 > 适用于大数据对象的临时存储
 
+	- **$emitter**
+
+		页面内的消息模块，作用于页面实例与及引用的组件实例，方法：
+
+		 - `on`   监听
+		 - `emit` 派发
+		 - `off`  取消监听
+
 * **实例方法**
 
 	- **$route**(pagename[, config]) => 别名 **$navigate**
@@ -223,6 +231,18 @@ var C = require('./wxpage').C
 		```js
 		this.$preload('play?vid=xxx&cid=xxx')
 		```
+
+	- **$on**(key, handler)
+
+		监听跨页面间的消息
+
+	- **$emit**(key, data)
+
+		派发页面间的消息
+
+	- **$off**(key, handler)
+
+		取消监听消息
 
 	- **$put**(id, value)
 

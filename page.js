@@ -17,12 +17,14 @@ var modules = {
 	fns, redirector, cache, message, dispatcher, channel
 }
 function WXPage(name, option) {
+	// page internal message
+	var emitter = new message()
 
 	// extend page config
 	extendPageBefore && extendPageBefore(name, option, modules)
 
 	// mixin component defs
-	Component.use(option, option.comps, `Page[${name}]`)
+	Component.use(option, option.comps, `Page[${name}]`, emitter)
 	if (option.onNavigate){
 		let onNavigateHandler = function (url, query) {
 			option.onNavigate({url, query})
@@ -52,6 +54,13 @@ function WXPage(name, option) {
 	 * Instance props
 	 */
 	option.$name = name
+	option.$cache = cache
+	option.$session = cache.session
+	option.$emitter = emitter
+	option.$state = {
+		// 是否小程序被打开首页启动页面
+		firstOpen: false
+	}
 
 	/**
 	 * Instance method hook
@@ -60,11 +69,17 @@ function WXPage(name, option) {
 	option.$redirect = route({type: 'redirectTo'})
 	option.$switch = route({type: 'switchTab'})
 	option.$back = back
-	option.$cache = cache
-	option.$session = cache.session
-	option.$state = {
-		// 是否小程序被打开首页启动页面
-		firstOpen: false
+	/**
+	 * Cross pages message methods
+	 */
+	option.$on = function () {
+		return dispatcher.on.apply(dispatcher, arguments)
+	}
+	option.$emit = function () {
+		return dispatcher.emit.apply(dispatcher, arguments)
+	}
+	option.$off = function () {
+		return dispatcher.off.apply(dispatcher, arguments)
 	}
 	/**
 	 * 存一次，取一次
