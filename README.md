@@ -61,7 +61,7 @@
 
 	- **onPreload(res)**
 
-		调用 page.$preload(url) 的时候触发，此时对应的页面并未被加载。
+		调用 this.**$preload**(url) 的时候触发，此时对应的页面并未被加载。
 		```
 		res:
 			url 完整的来源url
@@ -94,7 +94,7 @@
 
 	- **$route**(pagename[, config])
 
-		跳转到指定页面，pagename 可以带上 `queryString`, 例如
+		wx.`navigateTo`的封装。跳转到指定页面，pagename 可以带上 `queryString`, 例如
 
 		```js
 		this.$route('play?vid=xxx&cid=xxx')
@@ -102,7 +102,7 @@
 
 	- **$redirect**(pagename[, config])
 
-		跳转到指定页面, **替换页面，不产生历史**，pagename 可以带上 `queryString`, 例如
+		wx.`redirectTo`的封装。跳转到指定页面, **替换页面，不产生历史**，pagename 可以带上 `queryString`, 例如
 
 		```js
 		this.$redirect('play?vid=xxx&cid=xxx')
@@ -110,15 +110,21 @@
 
 	- **$switch**(pagename[, config])
 
-		switchTab的封装方法。
+		wx.`switchTab`的封装。
 
-	- **$back**()
+	- **$back**([delta])
 
-		页面后退，如果退无可退，返回首页
+		wx.`navigateBack`的封装。
+		```js
+		this.$back()
+		```
 
-	- **$home**()
+	- **$preload**(pagename)
 
-		返回首页，框架取第一个构造的页面模块作为首页
+		提前预加载指定页面（会触发对应页面的`onPreload`声明周期）
+		```js
+		this.$preload('play?vid=xxx&cid=xxx')
+		```
 
 	- **$put**(id, value)
 

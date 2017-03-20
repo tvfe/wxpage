@@ -53,7 +53,6 @@ function WXPage(name, option) {
 	option.$route = route({type: 'navigateTo'})
 	option.$redirect = route({type: 'redirectTo'})
 	option.$switch = route({type: 'switchTab'})
-	option.$home = home
 	option.$back = back
 	option.$state = {
 		// 是否小程序被打开首页启动页面
@@ -189,15 +188,10 @@ function appHideHandler() {
 /**
  * Redirect functions
  */
-function home(q) {
-	this.$switch(homePage + (q ? '?' + fns.queryStringify(q) :''))
-}
-function back() {
-	if (getCurrentPages().length > 1) {
-		wx.navigateBack()
-	} else {
-		this.$switch(homePage)
-	}
+function back(delta) {
+	wx.navigateBack({
+		delta: delta || 1
+	})
 }
 /**
  * Navigate handler
