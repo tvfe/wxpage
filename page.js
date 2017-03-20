@@ -9,22 +9,19 @@ var channel = {}
 var homePage
 var hasPageLoaded = 0
 var hideTime = 0
-var MIN15 = 900000 // 15*60*1000
 var routeResolve
 var nameResolve
 
 function WXPage(name, option) {
 	// the first time execute page is the home page
 	if (!homePage) homePage = name
-
-	const PAGE_PATH = routeResolve(name).replace(/^\/?/, '/?')
 	// mixin component defs
 	Component.use(option, option.comps, `Page[${name}]`)
 	if (option.onNavigate){
 		let onNavigateHandler = function (url, query) {
 			option.onNavigate({url, query})
 		}
-		console.log(`Page[${name}] define a "onNavigate" method.`)
+		console.log(`Page[${name}] define "onNavigate".`)
 		dispatcher.on('navigateTo:'+name, onNavigateHandler)
 		dispatcher.on('redirectTo:'+name, onNavigateHandler)
 		dispatcher.on('switchTab:'+name, onNavigateHandler)
@@ -33,7 +30,7 @@ function WXPage(name, option) {
 	 * Preload lifecycle method
 	 */
 	if (option.onPreload){
-		console.log(`Page[${name}] define an "onPreload" method.`)
+		console.log(`Page[${name}] define "onPreload".`)
 		dispatcher.on('preload:'+name, function (url, query) {
 			option.onPreload({url, query})
 		})
@@ -60,9 +57,7 @@ function WXPage(name, option) {
 	option.$back = back
 	option.$state = {
 		// 是否小程序被打开首页启动页面
-		firstOpen: false,
-		// 是否由分享打开的首个启动页面
-		firstShareOpen: false
+		firstOpen: false
 	}
 	/**
 	 * 存一次，取一次
@@ -125,22 +120,16 @@ function WXPage(name, option) {
 	/**
 	 * AOP life-cycle methods hook
 	 */
-	option.onLoad = fns.wrapFun(option.onLoad, function (res) {
+	option.onLoad = fns.wrapFun(option.onLoad, function() {
 		// After onLoad, onAwake is valid if defined
-		option.onAwake && message.on('App:longSleep', () => {
-			option.onAwake.call(this)
+		option.onAwake && message.on('app:sleep', function(t) {
+			option.onAwake.call(this, t)
 		})
-		var ptag = res && res.ptag
-		if (ptag){
-			//This is the first page app opened. Mark the ptag
-			getApp().global.ptag = ptag + ":" + name;
-		}
 		if (!hasPageLoaded) {
 			hasPageLoaded = true
 
 			let $state = this.$state
 			$state.firstOpen = true
-			$state.firstShareOpen = !!ptag
 		}
 	})
 	option.onReady = fns.wrapFun(option.onReady, function () {
@@ -172,20 +161,14 @@ function Application (option) {
 		WXPage.config(option.config)
 	}
 	/**
-	 * APP long sleep logical
+	 * APP sleep logical
 	 */
-	if (option.onShow) {
-		fns.wrapFun(option.onShow, function () {
-			var t = hideTime;
-			hideTime = 0;
-			if (t && new Date() - t > MIN15) {
-				message.emit('App:longSleep')
-			}
-		})
-	}
-	if (option.onHide) {
-		fns.wrapFun(option.onHide, function () {
-			hideTime = new Date()
+	option.onShow = option.onShow ? fns.wrapFun(option.onShow, appShowHandler) : appShowHandler
+	option.onHide = option.onHide ? fns.wrapFun(option.onHide, appHideHandler) : appHideHandler
+
+	if (option.onAwake) {
+		message.on('app:sleep', function(t){
+			option.onAwake.call(this, t)
 		})
 	}
 	/**
@@ -193,6 +176,16 @@ function Application (option) {
 	 */
 	App(option)
 }
+function appShowHandler () {
+	if (!hideTime) return
+	var t = hideTime
+	hideTime = 0
+	message.emit('app:sleep', new Date() - t)
+}
+function appHideHandler() {
+	hideTime = new Date()
+}
+
 /**
  * Redirect functions
  */
@@ -223,7 +216,7 @@ function route ({type}) {
 		config = config || {}
 		// append querystring
 		config.url = pagepath + (parts[1] ? '?' + parts[1] : '')
-    redirector[type](config)
+		redirector[type](config)
 	}
 }
 function getPageName(url) {

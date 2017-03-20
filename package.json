@@ -1,15 +1,19 @@
 {
   "name": "wxpage",
   "version": "1.0.0",
-  "description": "Components lib for weixin tinyapp.",
+  "description": "WXPage is a lightweight framework for weixin tinyapp.",
   "main": "page.js",
   "scripts": {
     "start": "webpack page.js test/tinyapp/lib/wxpage.js --watch --output-library-target='commonjs-module'",
-    "test": "mocha test/index"
+    "test": "mocha test/index",
+    "r": "webpack page.js dist/wxpage.js --output-library-target='commonjs-module'"
   },
   "author": "vfe",
   "license": "MIT",
   "devDependencies": {
     "webpack": "^2.2.1"
+  },
+  "dependencies": {
+    "@tencent/setting": "^1.0.0"
   }
 }

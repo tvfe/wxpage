@@ -4,8 +4,7 @@ var d = new Date()
 
 P('index', {
 	comps: [
-		Header('header1'),
-		Header('header2')
+		Header,
 	],
 	data: {
 	},
@@ -19,5 +18,11 @@ P('index', {
 	onPlay: function () {
 		console.time('onNavigate')
 		this.$route('play?cid=123')
+	},
+	onShow: function () {
+		console.log('## On index page show')
+	},
+	onAwake: function (t) {
+		console.log('## On index page awake', t)
 	}
 })

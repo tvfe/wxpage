@@ -1,0 +1,6 @@
+<import src="/comps/header.wxml" />
+
+<view class="wxpage">
+	<template is="header" data="{{...header}}"></template>
+	<button bindtap="onPlay">Go go play page</button>
+</view>

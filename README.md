@@ -1,36 +1,82 @@
 ## WXPage
+为优化而生的的极简微信小程序开发框架。
+
+### 程序
+* **定义**
+
+	示例：
+	```js
+	var A = require('./wxpage').A
+	A({
+		config: {
+			route: '/pages/$page' 	// $page 会被替换成页面名
+		},
+		onLaunch: function () {
+
+		},
+		onShow: function () {
+
+		}
+	})
+	```
+
 
 ### 页面
 * **定义**
 
-	页面请放在 `/pages/$page` 下，以 `index.js` 为页面逻辑层入口：
-
-	声明页面，需要引入 **basepage** 声明方法：
-
-	```js
-	var P = require("../../module/basepage");
-	// P(pagename, options)
-	```
-
 	示例：
 	```js
+	var P = require('./wxpage')
 	P('index', {
-		data: {/*...*/*},
+		data: {/*...*/},
+		onLaunch: function () {
+
+		},
 		onLoad: function () {
 			// do something
 		}
 	})
 	```
+
+
+### 组件
+* **定义**
+
+	示例：
+	```js
+	var C = require('./wxpage').C
+	C('index', {
+		data: {/*...*/},
+		onLoad: function () {
+			// do something
+		}
+	})
+	```
+
 * **扩展的生命周期**
 
-	- **onNavigate(res)**
+	- **onLaunch()**
 
-		页面间跳转开始时调用，此时对应的页面并未被加载
+		小程序第一次运行的时候调用，此时对应的页面并未被加载。
+
+	- **onPreload(res)**
+
+		调用 page.$preload(url) 的时候触发，此时对应的页面并未被加载。
 		```
 		res:
 			url 完整的来源url
 			query url上解析出来的查询参数
 		```
+
+	- **onNavigate(res)**
+
+		页面间跳转开始时调用，此时对应的页面并未被加载。
+		```
+		res:
+			url 完整的来源url
+			query url上解析出来的查询参数
+		```
+
 
 * **实例属性**
 
@@ -43,7 +89,6 @@
 		页面的一些状态集合，有以下字段：
 
 		- firstOpen <`Boolean`> 是否小程序被打开首个启动页面
-		- firstShareOpen <`Boolean`> 是否由分享打开的首个启动页面
 
 * **实例方法**
 
@@ -63,9 +108,17 @@
 		this.$redirect('play?vid=xxx&cid=xxx')
 		```
 
+	- **$switch**(pagename[, config])
+
+		switchTab的封装方法。
+
 	- **$back**()
 
 		页面后退，如果退无可退，返回首页
+
+	- **$home**()
+
+		返回首页，框架取第一个构造的页面模块作为首页
 
 	- **$put**(id, value)
 

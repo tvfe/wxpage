@@ -3,9 +3,8 @@ var Header = require('../comps/header')
 
 
 P('play', {
-	data: {
-
-	},
+	comps: [Header],
+	data: {},
 	onPreload: function (res) {
 		console.log('## On play page preload, with query:', res)
 	},
