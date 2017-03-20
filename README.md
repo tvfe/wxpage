@@ -165,7 +165,7 @@ var C = require('./wxpage').C
 
 * **实例方法**
 
-	- **$route**(pagename[, config])
+	- **$route**(pagename[, config]) => 别名 **$navigate**
 
 		wx.`navigateTo`的封装。跳转到指定页面，pagename 可以带上 `queryString`, 例如
 

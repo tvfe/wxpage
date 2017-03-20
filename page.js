@@ -56,7 +56,7 @@ function WXPage(name, option) {
 	/**
 	 * Instance method hook
 	 */
-	option.$route = route({type: 'navigateTo'})
+	option.$route = option.$navigate = route({type: 'navigateTo'})
 	option.$redirect = route({type: 'redirectTo'})
 	option.$switch = route({type: 'switchTab'})
 	option.$back = back
