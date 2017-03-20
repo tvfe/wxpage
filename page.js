@@ -3,18 +3,24 @@
 var fns = require('./lib/fns.js')
 var message = require('./lib/message')
 var redirector = require('./lib/redirector')
+var cache = require('./lib/cache')
 var Component = require('./lib/component.js')
 var dispatcher = new message()
 var channel = {}
-var homePage
 var hasPageLoaded = 0
 var hideTime = 0
 var routeResolve
 var nameResolve
-
+var extendPageBefore
+var extendPageAfter
+var modules = {
+	fns, redirector, cache, message, dispatcher, channel
+}
 function WXPage(name, option) {
-	// the first time execute page is the home page
-	if (!homePage) homePage = name
+
+	// extend page config
+	extendPageBefore && extendPageBefore(name, option, modules)
+
 	// mixin component defs
 	Component.use(option, option.comps, `Page[${name}]`)
 	if (option.onNavigate){
@@ -54,6 +60,8 @@ function WXPage(name, option) {
 	option.$redirect = route({type: 'redirectTo'})
 	option.$switch = route({type: 'switchTab'})
 	option.$back = back
+	option.$cache = cache
+	option.$session = cache.session
 	option.$state = {
 		// 是否小程序被打开首页启动页面
 		firstOpen: false
@@ -93,29 +101,6 @@ function WXPage(name, option) {
 	option.$curPage = function () {
 		return getCurrentPages().slice(0).pop()
 	}
-
-	/**
-	 * Instance property
-	 * 方法挂在的属性，在页面加载的时候会被丢弃掉, 不能直接挂在方法模块
-	 */
-
-	/**
-	 * 分享配置方法包壳
-	 */
-	if (option.onShareAppMessage) {
-		let onShare = option.onShareAppMessage
-		option.onShareAppMessage = function () {
-			var res = onShare.apply(this, arguments)
-			if (res && !/\bptag=/.test(res.path)) {
-				res.path = fns.queryJoin(res.path, {
-					ptag: 'share'
-				})
-			}
-			console.log('[Share]', res)
-			return res
-		}
-	}
-
 	/**
 	 * AOP life-cycle methods hook
 	 */
@@ -139,7 +124,11 @@ function WXPage(name, option) {
 	if (option.onLaunch) {
 		option.onLaunch()
 	}
-	Page(option);
+
+	// extend page config
+	extendPageAfter && extendPageAfter(name, option, modules)
+	// register page
+	Page(option)
 	return option;
 }
 function pageRedirectorDelegate(emitter, keys) {
@@ -225,8 +214,11 @@ WXPage.A = WXPage.App = WXPage.Application = Application
  */
 function _conf(k, v) {
 	switch(k) {
-		case 'home':
-			homePage = v
+		case 'extendPageBefore':
+			extendPageBefore = v
+			break
+		case 'extendPageAfter':
+			extendPageAfter = v
 			break
 		case 'route':
 			if (fns.type(v) == 'string') {

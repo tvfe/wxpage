@@ -64,7 +64,7 @@ module.exports =
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 4);
+/******/ 	return __webpack_require__(__webpack_require__.s = 5);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -354,6 +354,114 @@ module.exports = Message;
 
 
 var fns = __webpack_require__(0)
+var sessionId = +new Date()
+var sessionKey = 'session_'
+console.log('[Session] Current ssid:', sessionId)
+var cache = {
+	session: {
+		set: function (k, v, asyncCB) {
+			return cache.set(sessionKey+k, v, -1*sessionId, asyncCB)
+		},
+		get: function (k, asyncCB) {
+			return cache.get(sessionKey+k, asyncCB)
+		}
+	},
+	/**
+	 * setter
+	 * @param {String} k      key
+	 * @param {Object} v      value
+	 * @param {Number} expire 过期时间，毫秒，为负数的时候表示为唯一session ID
+	 * @param {Function} asyncCB optional, 是否异步、异步回调方法
+	 */
+	set: function (k, v, expire, asyncCB) {
+		if (fns.type(expire) == 'function') {
+			asyncCB = expire
+			expire = 0
+		} else if (asyncCB && fns.type(asyncCB) != 'function') {
+			asyncCB = noop
+		}
+		expire = expire || 0
+		if (expire > 0) {
+			var t = + new Date()
+			expire = expire + t
+		}
+		var data = {
+			expr: +expire,
+			data: v
+		}
+		if (asyncCB) {
+			wx.setStorage({
+				key: '_cache_' + k,
+				data: data,
+				success: function () {
+					asyncCB()
+				},
+				fail: function (e) {
+					asyncCB(e || `set "${k}" fail`)
+				}
+			})
+		} else {
+			wx.setStorageSync('_cache_' + k, data)
+		}
+	},
+	/**
+	 * getter
+	 * @param {String} k      key
+	 * @param {Function} asyncCB optional, 是否异步、异步回调方法
+	 */
+	get: function (k, asyncCB) {
+		if (asyncCB) {
+			if (fns.type(asyncCB) != 'function') asyncCB = noop
+			var errMsg = `get "${k}" fail`
+			wx.getStorage({
+				key: '_cache_' + k,
+				success: function (data) {
+					if (data && data.data) {
+						asyncCB(null, _resolve(k, data.data))
+					} else {
+						asyncCB(data ? data.errMsg || errMsg : errMsg)
+					}
+				},
+				fail: function (e) {
+					asyncCB(e || errMsg)
+				}
+			})
+		} else {
+			return _resolve(k, wx.getStorageSync('_cache_' + k))
+		}
+	}
+}
+function _resolve(k, v) {
+	if (!v) return null
+	// 永久存储
+	if (!v.expr) return v.data
+	else {
+		if (v.expr < 0 && -1*v.expr == sessionId) {
+			// session
+		 	return v.data
+		} else if (v.expr > 0 && new Date() < v.expr) {
+			// 普通存储
+			return v.data
+		} else {
+		 	wx.removeStorage({
+		 		key: k
+		 	})
+			return null
+		}
+	}
+}
+function noop() {}
+module.exports = cache
+
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var fns = __webpack_require__(0)
 /**
  * Component instance
  */
@@ -414,14 +522,12 @@ function component(name, ctor/*[ ctor ]*/) {
 		var dat = {}
 		var vm = {
 			$set: function (data) {
-				if (!cid) return
-				if (!ctx) {
-					fns.objEach(data, function (k, v) {
-						_set(dat, k, v)
-					})
-				} else {
-					ctx.$setData(cid, data)
-				}
+				if (!cid || !ctx) return
+				ctx.$setData(cid, data)
+			},
+			$data: function () {
+				if (!ctx) return dat
+				else if (cid) return ctx[cid]
 			}
 		}
 		var def = fns.type(ctor) == 'function'
@@ -453,43 +559,13 @@ function component(name, ctor/*[ ctor ]*/) {
 		return def
 	}
 }
-/**
- * set value by keypath
- */
-function _set(obj, keypath, value) {
-    var parts = keypath.split(/\[|\]?\./)
-    var last = parts.pop()
-    var dest = obj
-    var hasError, errorInfo
-    parts.some(function(key) {
-      var t = fns.type(dest)
-      if (t != 'object' && t != 'array') {
-          hasError = true
-          errorInfo = [key, dest]
-          return true
-      }
-      dest = dest[key]
-    })
-    // set value
-    if (!hasError) {
-    	var t = fns.type(dest)
-      if (t != 'object' && t != 'array') {
-          hasError = true
-          errorInfo = [last, dest]
-      } else {
-          dest[last] = value
-          return obj
-      }
-    }
-    console.error('Can not set "' + errorInfo[0] + '" to "'+ errorInfo[1] + '" when on "' + keypath + '"')
-}
 
 component.use = useComponents
 module.exports = component
 
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -535,7 +611,7 @@ exportee.navigateBack = function () {
 
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -543,19 +619,25 @@ exportee.navigateBack = function () {
 
 var fns = __webpack_require__(0)
 var message = __webpack_require__(1)
-var redirector = __webpack_require__(3)
-var Component = __webpack_require__(2)
+var redirector = __webpack_require__(4)
+var cache = __webpack_require__(2)
+var Component = __webpack_require__(3)
 var dispatcher = new message()
 var channel = {}
-var homePage
 var hasPageLoaded = 0
 var hideTime = 0
 var routeResolve
 var nameResolve
-
+var extendPageBefore
+var extendPageAfter
+var modules = {
+	fns, redirector, cache, message, dispatcher, channel
+}
 function WXPage(name, option) {
-	// the first time execute page is the home page
-	if (!homePage) homePage = name
+
+	// extend page config
+	extendPageBefore && extendPageBefore(name, option, modules)
+
 	// mixin component defs
 	Component.use(option, option.comps, `Page[${name}]`)
 	if (option.onNavigate){
@@ -594,8 +676,9 @@ function WXPage(name, option) {
 	option.$route = route({type: 'navigateTo'})
 	option.$redirect = route({type: 'redirectTo'})
 	option.$switch = route({type: 'switchTab'})
-	option.$home = home
 	option.$back = back
+	option.$cache = cache
+	option.$session = cache.session
 	option.$state = {
 		// 是否小程序被打开首页启动页面
 		firstOpen: false
@@ -635,29 +718,6 @@ function WXPage(name, option) {
 	option.$curPage = function () {
 		return getCurrentPages().slice(0).pop()
 	}
-
-	/**
-	 * Instance property
-	 * 方法挂在的属性，在页面加载的时候会被丢弃掉, 不能直接挂在方法模块
-	 */
-
-	/**
-	 * 分享配置方法包壳
-	 */
-	if (option.onShareAppMessage) {
-		let onShare = option.onShareAppMessage
-		option.onShareAppMessage = function () {
-			var res = onShare.apply(this, arguments)
-			if (res && !/\bptag=/.test(res.path)) {
-				res.path = fns.queryJoin(res.path, {
-					ptag: 'share'
-				})
-			}
-			console.log('[Share]', res)
-			return res
-		}
-	}
-
 	/**
 	 * AOP life-cycle methods hook
 	 */
@@ -681,7 +741,11 @@ function WXPage(name, option) {
 	if (option.onLaunch) {
 		option.onLaunch()
 	}
-	Page(option);
+
+	// extend page config
+	extendPageAfter && extendPageAfter(name, option, modules)
+	// register page
+	Page(option)
 	return option;
 }
 function pageRedirectorDelegate(emitter, keys) {
@@ -730,15 +794,10 @@ function appHideHandler() {
 /**
  * Redirect functions
  */
-function home(q) {
-	this.$switch(homePage + (q ? '?' + fns.queryStringify(q) :''))
-}
-function back() {
-	if (getCurrentPages().length > 1) {
-		wx.navigateBack()
-	} else {
-		this.$switch(homePage)
-	}
+function back(delta) {
+	wx.navigateBack({
+		delta: delta || 1
+	})
 }
 /**
  * Navigate handler
@@ -772,8 +831,11 @@ WXPage.A = WXPage.App = WXPage.Application = Application
  */
 function _conf(k, v) {
 	switch(k) {
-		case 'home':
-			homePage = v
+		case 'extendPageBefore':
+			extendPageBefore = v
+			break
+		case 'extendPageAfter':
+			extendPageAfter = v
 			break
 		case 'route':
 			if (fns.type(v) == 'string') {

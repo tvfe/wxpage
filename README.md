@@ -20,6 +20,60 @@
 	})
 	```
 
+* **扩展的生命周期**
+
+	- **onAwake(time`<Number>`)**
+
+		小程序进入后台模式后再激活的时候触发。`time`是耗时。
+
+* **扩展的配置(config)**
+
+	- **route**
+
+		页面目录的路由地址，`$page`会被替换为页面名
+
+	- **extendPageBefore(name, def, modules)**
+
+		自定义扩展页面，在框架执行扩展之前。
+
+	- **extendPageAfter(name, def, modules)**
+
+		自定义扩展页面，在框架执行扩展之后。
+
+### 组件
+* **定义**
+
+	示例：
+	```js
+	var C = require('./wxpage').C
+	C('index', function (vm) {
+		return {
+			data: {/*...*/},
+			onLoad: function () {
+				// do something
+			}
+		}
+	})
+	```
+
+* **扩展的生命周期**
+
+	同**`页面的声命周期`**
+
+* **VM实例方法*
+
+	- **$set({...})**
+
+		同 **this.setData({...})**，但只对当前组件数据生效
+		```js
+		vm.$set({
+			title: 'This is component'
+		})
+		```
+
+	- **$data()**
+
+		获取当前组件的 `data` 对象
 
 ### 页面
 * **定义**
@@ -39,25 +93,15 @@
 	```
 
 
-### 组件
-* **定义**
-
-	示例：
-	```js
-	var C = require('./wxpage').C
-	C('index', {
-		data: {/*...*/},
-		onLoad: function () {
-			// do something
-		}
-	})
-	```
-
 * **扩展的生命周期**
 
 	- **onLaunch()**
 
 		小程序第一次运行的时候调用，此时对应的页面并未被加载。
+
+	- **onAwake(time`<Number>`)**
+
+		小程序进入后台模式后再激活的时候触发。`time`是耗时。
 
 	- **onPreload(res)**
 
@@ -89,6 +133,22 @@
 		页面的一些状态集合，有以下字段：
 
 		- firstOpen <`Boolean`> 是否小程序被打开首个启动页面
+
+	- **$cache**
+
+		本地缓存的封装, 方法如下：
+
+		- `set(key, value[, expire][, cb])` 如果传 `cb` 参数，会使用异步模式并回调
+		- `get(key[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
+
+	- **$session**
+
+		使用本地缓存实现的session, 小程序退出后session会失, 方法如下：
+
+		- `set(key, value[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
+		- `get(key[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
+
+>	适用于大数据对象的临时存储
 
 * **实例方法**
 
