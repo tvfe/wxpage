@@ -77,11 +77,20 @@ var C = require('./wxpage').C
 
 * **使用组件**
 
-```html
-<import src="/path/to/comp.wxml"></import>
+	模板:
+	```html
+	<import src="/path/to/comp.wxml"></import>
 
-<template is="item" data="{{...comp}}"/>
-```
+	<template is="item" data="{{...comp}}"/>
+	```
+
+	Page:
+	```js
+	var P = require('./wxpage')
+	P({
+		comps: [require('/path/to/comp')]
+	})
+	```
 
 * **扩展的生命周期**
 
