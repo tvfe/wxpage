@@ -116,20 +116,22 @@ var C = require('./wxpage').C
 
 	- **onPreload(res)**
 
-		调用 this.**$preload**(url) 的时候触发，此时对应的页面并未被加载。
+		调用 this.**$preload**(url) 的时候触发，此时对应的页面并未被加载，`res`:
 		```
-		res:
-			url 完整的来源url
-			query url上解析出来的查询参数
+		{
+			url: '', //完整的来源url
+			query: {} //url上解析出来的查询参数
+		}
 		```
 
 	- **onNavigate(res)**
 
-		页面间跳转开始时调用，此时对应的页面并未被加载。
+		页面间跳转开始时调用，此时对应的页面并未被加载，`res`:
 		```
-		res:
-			url 完整的来源url
-			query url上解析出来的查询参数
+		{
+			url: '', //完整的来源url
+			query: {} //url上解析出来的查询参数
+		}
 		```
 
 
