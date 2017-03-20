@@ -1,6 +1,17 @@
 ## WXPage
 为优化而生的的极简微信小程序开发框架。
 
+
+### 使用
+
+将[dist/wxpage.js](http://git.code.oa.com/vfe-components/wxpage/blob/master/dist/wxpage.js) 放置到你的项目目录下，例如: "lib/wxpage.js"
+
+```js
+var P = require('./wxpage')
+var A = require('./wxpage').A
+var C = require('./wxpage').C
+```
+
 ### 程序
 * **定义**
 
