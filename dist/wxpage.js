@@ -589,11 +589,10 @@ module.exports = component
  */
 var Message = __webpack_require__(1)
 var exportee = module.exports = new Message()
-var timer, pending
+var timer, readyTimer, pending
 
 exportee.on('page:ready', function () {
-	setTimeout(function () {
-		clearTimeout(timer)
+	readyTimer = setTimeout(function () {
 		pending = false
 	}, 100)
 })
@@ -601,6 +600,7 @@ function route(type, cfg, args) {
 	if (pending) return
 	pending = true
 	clearTimeout(timer)
+	clearTimeout(readyTimer)
 	/**
 	 * 2s内避免重复的跳转
 	 */
