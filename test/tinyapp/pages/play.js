@@ -14,6 +14,14 @@ P('play', {
 	onLoad: function(res) {
 		console.log('## On play page load, with query:', res)
 		var t = this.$take('t')
-		console.log('## Play Load:', new Date()-t)
+	},
+	onShow: function () {
+		console.log('## On play page show')
+	},
+	onReady: function () {
+		console.log('## On play page ready')
+		setTimeout(function () {
+			console.log('## On play page ready timer')
+		}, 100)
 	}
 })

@@ -10,5 +10,7 @@
 	>Go go play page(bindRoute)</button>
 	<button bindtap="onPlayNav">Go go play page(wx.navigateTo)</button>
 
-	<navigator url="/pages/play?cid=12345"><button>Go go play page(navigator)</button></navigator>
+	<navigator url="/pages/play?cid=12"><button>Go go play page(navigator:navigate)</button></navigator>
+	<navigator url="/pages/play?cid=123" open-type="redirect"><button>Go go play page(navigator:redirect)</button></navigator>
+	<navigator url="/pages/channel?cid=12345" open-type="switchTab"><button>Go go play page(navigator:switchTab)</button></navigator>
 </view>

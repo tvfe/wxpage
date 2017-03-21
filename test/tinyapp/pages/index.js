@@ -28,11 +28,9 @@ P('index', {
 		console.log('[Step 3] session get', this.$session.get('session'))
 	},
 	onPlay: function () {
-		console.time('onNavigate')
 		this.$route('play?cid=123')
 	},
 	onPlayNav: function () {
-		this.$put('t', new Date())
 		wx.navigateTo({
 			url: '/pages/play?cid=abcd'
 		})
@@ -44,9 +42,9 @@ P('index', {
 		console.log('## On index page awake', t)
 	},
 	onClickBefore: function (e) {
-		console.log('## On click before', e)
+		console.log('## On click before')
 	},
 	onClickAfter: function (e) {
-		console.log('## On click after', e)
+		// console.log('## On click after', e)
 	}
 })
