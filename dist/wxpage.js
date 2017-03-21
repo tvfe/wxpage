@@ -465,7 +465,7 @@ var fns = __webpack_require__(0)
 /**
  * Component instance
  */
-function useComponents(option, comps, label) {
+function useComponents(option, comps, label, emitter) {
 	// mixin component defs
 	if (comps) {
 		comps.forEach(function (def) {
@@ -479,7 +479,7 @@ function useComponents(option, comps, label) {
 							// skip
 							return
 						case 'comps':
-							useComponents(option, v)
+							useComponents(option, v, label, emitter)
 							return
 						case 'onLoad':
 						case 'onReady':
@@ -505,6 +505,8 @@ function useComponents(option, comps, label) {
 				// assign to page option
 				option[k] = v
 			})
+
+			def.__$instance && def.__$instance(emitter)
 		})
 	}
 }
@@ -519,6 +521,7 @@ function component(name, ctor/*[ ctor ]*/) {
 	}
 	return function (cid) {
 		var ctx
+		var emitter
 		var dat = {}
 		var vm = {
 			$set: function (data) {
@@ -528,6 +531,14 @@ function component(name, ctor/*[ ctor ]*/) {
 			$data: function () {
 				if (!ctx) return dat
 				else if (cid) return ctx[cid]
+			},
+			$on: function(type, handler) {
+				if (!emitter) return noop
+				return emitter.on(type, handler)
+			},
+			$emit: function () {
+				if (!emitter) return
+				emitter.emit.apply(emitter, arguments)
 			}
 		}
 		var def = fns.type(ctor) == 'function'
@@ -542,7 +553,7 @@ function component(name, ctor/*[ ctor ]*/) {
 			console.error(`Illegal component options [${name || 'Anonymous'}]`)
 			def = {}
 		}
-		useComponents(def, def.comps, `Component[${name || 'Anonymous'}]`)
+		useComponents(def, def.comps, `Component[${name || 'Anonymous'}]`, emitter)
 
 		cid = cid || def.id || name
 		if (!cid) {
@@ -556,10 +567,13 @@ function component(name, ctor/*[ ctor ]*/) {
 			data[cid].$id = cid
 			def.data = data
 		}
+		def.__$instance = function (et) {
+			emitter = et
+		}
 		return def
 	}
 }
-
+function noop() {}
 component.use = useComponents
 module.exports = component
 
@@ -634,12 +648,14 @@ var modules = {
 	fns, redirector, cache, message, dispatcher, channel
 }
 function WXPage(name, option) {
+	// page internal message
+	var emitter = new message()
 
 	// extend page config
 	extendPageBefore && extendPageBefore(name, option, modules)
 
 	// mixin component defs
-	Component.use(option, option.comps, `Page[${name}]`)
+	Component.use(option, option.comps, `Page[${name}]`, emitter)
 	if (option.onNavigate){
 		let onNavigateHandler = function (url, query) {
 			option.onNavigate({url, query})
@@ -661,14 +677,18 @@ function WXPage(name, option) {
 	/**
 	 * Preload another page in current page
 	 */
-	option.$preload = function(url){
-		var name = getPageName(url)
-		name && dispatcher.emit('preload:'+name, url, fns.queryParse(url.split('?')[1]))
-	}
+	option.$preload = preload
 	/**
 	 * Instance props
 	 */
 	option.$name = name
+	option.$cache = cache
+	option.$session = cache.session
+	option.$emitter = emitter
+	option.$state = {
+		// 是否小程序被打开首页启动页面
+		firstOpen: false
+	}
 
 	/**
 	 * Instance method hook
@@ -677,11 +697,25 @@ function WXPage(name, option) {
 	option.$redirect = route({type: 'redirectTo'})
 	option.$switch = route({type: 'switchTab'})
 	option.$back = back
-	option.$cache = cache
-	option.$session = cache.session
-	option.$state = {
-		// 是否小程序被打开首页启动页面
-		firstOpen: false
+
+	/**
+	 * Click delegate methods
+	 */
+	option.$bindRoute = option.$bindNavigate = bindNavigate
+	option.$bindRedirect = bindRedirect
+	option.$bindSwitch = bindSwitch
+
+	/**
+	 * Cross pages message methods
+	 */
+	option.$on = function () {
+		return dispatcher.on.apply(dispatcher, arguments)
+	}
+	option.$emit = function () {
+		return dispatcher.emit.apply(dispatcher, arguments)
+	}
+	option.$off = function () {
+		return dispatcher.off.apply(dispatcher, arguments)
 	}
 	/**
 	 * 存一次，取一次
@@ -794,10 +828,40 @@ function appHideHandler() {
 /**
  * Redirect functions
  */
+var navigate = route({type: 'navigateTo'})
+var redirect = route({type: 'redirectTo'})
+var switchTab = route({type: 'switchTab'})
+var routeMethods = {navigate, redirect, switchTab}
 function back(delta) {
 	wx.navigateBack({
 		delta: delta || 1
 	})
+}
+function preload(url){
+	var name = getPageName(url)
+	name && dispatcher.emit('preload:'+name, url, fns.queryParse(url.split('?')[1]))
+}
+var bindNavigate = clickDelegate('navigate')
+var bindRedirect = clickDelegate('redirect')
+var bindSwitch = clickDelegate('switchTab')
+function clickDelegate(type) {
+	var _route = routeMethods[type]
+	return function (e) {
+		if (!e) return
+			console.log(e, this)
+		var dataset = e.currentTarget.dataset
+		var before = dataset.before
+		var after = dataset.after
+		var url = dataset.url
+		var ctx = this
+		try {
+			if (ctx && before && ctx[before]) ctx[before].call(ctx, e)
+		} finally {
+			if (!url) return
+			_route(url)
+			if (ctx && after && ctx[after]) ctx[after].call(ctx, e)
+		}
+	}
 }
 /**
  * Navigate handler
