@@ -186,7 +186,6 @@ var C = require('./wxpage').C
 		- `set(key, value[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
 		- `get(key[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
 
-
 	- **$emitter**
 
 		页面内的消息模块，作用于页面实例与及引用的组件实例，方法：
@@ -231,6 +230,29 @@ var C = require('./wxpage').C
 		```js
 		this.$preload('play?vid=xxx&cid=xxx')
 		```
+
+	- **$bindRoute**()
+
+		点击代理方法，绑定 `$onRoute` 逻辑，在元素上声明 `data-url` 作为跳转地址，支持切面方法：
+		+ `data-before` 跳转前执行
+		+ `data-after` 	跳转后执行
+
+		示例：
+		```html
+		<button
+			bindtap="$bindRoute"
+			data-url="/pages/play"
+			data-before="onClickBefore"
+		>click redirect</button>
+		```
+
+	- **$bindRedirect**()
+
+		同 **$bindRoute**, 绑定 `$onRedirect`
+
+	- **$bindSwitch**()
+
+		同 **$bindRoute**, 绑定 `$onSwitch`
 
 	- **$on**(key, handler)
 
