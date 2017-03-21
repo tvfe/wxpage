@@ -2,5 +2,13 @@
 
 <view class="wxpage">
 	<template is="header" data="{{...header}}"></template>
-	<button bindtap="onPlay">Go go play page</button>
+	<button bindtap="onPlay">Go go play page($route)</button>
+	<button bindtap="$bindRoute"
+		data-url="/pages/play?cid=1"
+		data-before="onClickBefore"
+		data-after="onClickAfter"
+	>Go go play page(bindRoute)</button>
+	<button bindtap="onPlayNav">Go go play page(wx.navigateTo)</button>
+
+	<navigator url="/pages/play?cid=12345"><button>Go go play page(navigator)</button></navigator>
 </view>

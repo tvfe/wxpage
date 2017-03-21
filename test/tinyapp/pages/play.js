@@ -13,5 +13,7 @@ P('play', {
 	},
 	onLoad: function(res) {
 		console.log('## On play page load, with query:', res)
+		var t = this.$take('t')
+		console.log('## Play Load:', new Date()-t)
 	}
 })

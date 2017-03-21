@@ -31,10 +31,22 @@ P('index', {
 		console.time('onNavigate')
 		this.$route('play?cid=123')
 	},
+	onPlayNav: function () {
+		this.$put('t', new Date())
+		wx.navigateTo({
+			url: '/pages/play?cid=abcd'
+		})
+	},
 	onShow: function () {
 		console.log('## On index page show')
 	},
 	onAwake: function (t) {
 		console.log('## On index page awake', t)
+	},
+	onClickBefore: function () {
+		console.log('## On click before')
+	},
+	onClickAfter: function () {
+		console.log('## On click after')
 	}
 })

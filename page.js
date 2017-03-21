@@ -46,10 +46,7 @@ function WXPage(name, option) {
 	/**
 	 * Preload another page in current page
 	 */
-	option.$preload = function(url){
-		var name = getPageName(url)
-		name && dispatcher.emit('preload:'+name, url, fns.queryParse(url.split('?')[1]))
-	}
+	option.$preload = preload
 	/**
 	 * Instance props
 	 */
@@ -69,6 +66,14 @@ function WXPage(name, option) {
 	option.$redirect = route({type: 'redirectTo'})
 	option.$switch = route({type: 'switchTab'})
 	option.$back = back
+
+	/**
+	 * Click delegate methods
+	 */
+	option.$bindRoute = option.$bindNavigate = bindNavigate
+	option.$bindRedirect = bindRedirect
+	option.$bindSwitch = bindSwitch
+
 	/**
 	 * Cross pages message methods
 	 */
@@ -192,10 +197,40 @@ function appHideHandler() {
 /**
  * Redirect functions
  */
+var navigate = route({type: 'navigateTo'})
+var redirect = route({type: 'redirectTo'})
+var switchTab = route({type: 'switchTab'})
+var routeMethods = {navigate, redirect, switchTab}
 function back(delta) {
 	wx.navigateBack({
 		delta: delta || 1
 	})
+}
+function preload(url){
+	var name = getPageName(url)
+	name && dispatcher.emit('preload:'+name, url, fns.queryParse(url.split('?')[1]))
+}
+var bindNavigate = clickDelegate('navigate')
+var bindRedirect = clickDelegate('redirect')
+var bindSwitch = clickDelegate('switchTab')
+function clickDelegate(type) {
+	var _route = routeMethods[type]
+	return function (e) {
+		if (!e) return
+			console.log(e, this)
+		var dataset = e.currentTarget.dataset
+		var before = dataset.before
+		var after = dataset.after
+		var url = dataset.url
+		var ctx = this
+		try {
+			if (ctx && before && ctx[before]) ctx[before].call(ctx, e)
+		} finally {
+			if (!url) return
+			_route(url)
+			if (ctx && after && ctx[after]) ctx[after].call(ctx, e)
+		}
+	}
 }
 /**
  * Navigate handler

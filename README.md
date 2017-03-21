@@ -181,12 +181,11 @@ var C = require('./wxpage').C
 
 	- **$session**
 
-		使用本地缓存实现的session, 小程序退出后session会失, 方法如下：
+		使用本地缓存实现的session, 小程序退出后session会消息，`适用于大数据对象的临时存储` 方法如下：
 
 		- `set(key, value[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
 		- `get(key[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
 
-> 适用于大数据对象的临时存储
 
 	- **$emitter**
 
@@ -195,6 +194,7 @@ var C = require('./wxpage').C
 		 - `on`   监听
 		 - `emit` 派发
 		 - `off`  取消监听
+
 
 * **实例方法**
 
