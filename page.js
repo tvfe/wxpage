@@ -217,7 +217,6 @@ function clickDelegate(type) {
 	var _route = routeMethods[type]
 	return function (e) {
 		if (!e) return
-			console.log(e, this)
 		var dataset = e.currentTarget.dataset
 		var before = dataset.before
 		var after = dataset.after

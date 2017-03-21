@@ -43,10 +43,10 @@ P('index', {
 	onAwake: function (t) {
 		console.log('## On index page awake', t)
 	},
-	onClickBefore: function () {
-		console.log('## On click before')
+	onClickBefore: function (e) {
+		console.log('## On click before', e)
 	},
-	onClickAfter: function () {
-		console.log('## On click after')
+	onClickAfter: function (e) {
+		console.log('## On click after', e)
 	}
 })
