@@ -1,6 +1,0 @@
-<import src="/comps/header/index.wxml" />
-
-<view>
-	<template is="header" data="{{...header, page: 'Play'}}"></template>
-	<view style="text-align: center;color: green;">In play page</view>
-</view>
