@@ -38,15 +38,15 @@ var C = require('./wxpage').C
 
 * **扩展的配置(config)**
 
-	- **route**
+	- **route** `必需`
 
 		页面目录的路由地址，`$page`会被替换为页面名
 
-	- **extendPageBefore(name, def, modules)**
+	- **extendPageBefore(name, def, modules)** `可选`
 
 		自定义扩展页面，在框架执行扩展之前。
 
-	- **extendPageAfter(name, def, modules)**
+	- **extendPageAfter(name, def, modules)** `可选`
 
 		自定义扩展页面，在框架执行扩展之后。
 

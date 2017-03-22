@@ -796,6 +796,10 @@ pageRedirectorDelegate(redirector, ['navigateTo', 'redirectTo', 'switchTab'])
  * Application wrapper
  */
 function Application (option) {
+
+	if (!option.config || !option.config.route) {
+		throw new Error('config.route is necessary !')
+	}
 	if (option.config) {
 		WXPage.config(option.config)
 	}
