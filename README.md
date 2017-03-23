@@ -1,6 +1,13 @@
 ## WXPage
 [WXPage](http://git.code.oa.com/vfe-components/wxpage) 是一个极其轻量的微信小程序开发框架，其中的API蕴含了“`极致页面打开速度`的思想”，出于维护与效率而设计的功能，框架来自“`腾讯视频`”小程序的项目沉淀。
 
+## 目录
+
+[使用](#使用)
+[程序](#程序)
+[组件](#组件)
+[页面](#页面)
+
 ### 使用
 
 将[dist/wxpage.js](http://git.code.oa.com/vfe-components/wxpage/blob/master/dist/wxpage.js) 放置到你的项目目录下，例如: "lib/wxpage.js"。使用[DEMO](http://git.code.oa.com/vfe-components/wxpage/tree/master/test/tinyapp)
@@ -12,7 +19,7 @@ var C = require('./wxpage').C
 ```
 
 ### 程序
-* **定义**
+#### ● 定义
 
 	示例：
 	```js
@@ -30,13 +37,13 @@ var C = require('./wxpage').C
 	})
 	```
 
-* **扩展的生命周期**
+#### ● 扩展的生命周期
 
 	- **onAwake(time`<Number>`)**
 
 		小程序进入后台模式后再激活的时候触发。`time`是耗时。
 
-* **扩展的配置(config)**
+#### ● 扩展的配置(config)
 
 	- **route** `必需`
 
@@ -51,7 +58,7 @@ var C = require('./wxpage').C
 		自定义扩展页面，在框架执行扩展之后。
 
 ### 组件
-* **定义**
+#### ● 定义
 
 	示例：
 	```html
@@ -75,7 +82,7 @@ var C = require('./wxpage').C
 	})
 	```
 
-* **使用组件**
+#### ● 使用组件
 
 	模板:
 	```html
@@ -92,11 +99,11 @@ var C = require('./wxpage').C
 	})
 	```
 
-* **扩展的生命周期**
+#### ● 扩展的生命周期
 
 	同页面的生命周期
 
-* **VM实例方法**
+#### ● VM实例方法
 
 	- **$set({...})**
 
@@ -112,7 +119,7 @@ var C = require('./wxpage').C
 		获取当前组件的 `data` 对象
 
 ### 页面
-* **定义**
+#### ● 定义
 
 	示例：
 	```js
@@ -129,7 +136,7 @@ var C = require('./wxpage').C
 	```
 
 
-* **扩展的生命周期**
+#### ● 扩展的生命周期
 
 	- **onLaunch()**
 
@@ -160,7 +167,7 @@ var C = require('./wxpage').C
 		```
 
 
-* **实例属性**
+#### ● 实例属性
 
 	- **$name**
 
@@ -195,7 +202,7 @@ var C = require('./wxpage').C
 		 - `off`  取消监听
 
 
-* **实例方法**
+#### ● 实例方法
 
 	- **$route**(pagename[, config]) => 别名 **$navigate**
 
