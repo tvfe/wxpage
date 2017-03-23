@@ -21,278 +21,278 @@ var C = require('./wxpage').C
 ### 程序
 #### ● 定义
 
-	示例：
-	```js
-	var A = require('./wxpage').A
-	A({
-		config: {
-			route: '/pages/$page'   // $page 会被替换成页面名
-		},
-		onLaunch: function () {
+示例：
+```js
+var A = require('./wxpage').A
+A({
+	config: {
+		route: '/pages/$page'   // $page 会被替换成页面名
+	},
+	onLaunch: function () {
 
-		},
-		onShow: function () {
+	},
+	onShow: function () {
 
-		}
-	})
-	```
+	}
+})
+```
 
 #### ● 扩展的生命周期
 
-	- **onAwake(time`<Number>`)**
+- **onAwake(time`<Number>`)**
 
-		小程序进入后台模式后再激活的时候触发。`time`是耗时。
+	小程序进入后台模式后再激活的时候触发。`time`是耗时。
 
 #### ● 扩展的配置(config)
 
-	- **route** `必需`
+- **route** `必需`
 
-		页面目录的路由地址，`$page`会被替换为页面名
+	页面目录的路由地址，`$page`会被替换为页面名
 
-	- **extendPageBefore(name, def, modules)** `可选`
+- **extendPageBefore(name, def, modules)** `可选`
 
-		自定义扩展页面，在框架执行扩展之前。
+	自定义扩展页面，在框架执行扩展之前。
 
-	- **extendPageAfter(name, def, modules)** `可选`
+- **extendPageAfter(name, def, modules)** `可选`
 
-		自定义扩展页面，在框架执行扩展之后。
+	自定义扩展页面，在框架执行扩展之后。
 
 ### 组件
 #### ● 定义
 
-	示例：
-	```html
-	<template name="comp">
-		<button>It is component: {{name}}</button>
-	</template>
-	```
+示例：
+```html
+<template name="comp">
+	<button>It is component: {{name}}</button>
+</template>
+```
 
-	```js
-	var C = require('./wxpage').C
-	C('comp', function (vm) {
-		return {
-			data: {/*...*/},
-			onLoad: function () {
-				// do something
-				vm.$set({
-					name: 'comp'
-				})
-			}
+```js
+var C = require('./wxpage').C
+C('comp', function (vm) {
+	return {
+		data: {/*...*/},
+		onLoad: function () {
+			// do something
+			vm.$set({
+				name: 'comp'
+			})
 		}
-	})
-	```
+	}
+})
+```
 
 #### ● 使用组件
 
-	模板:
-	```html
-	<import src="/path/to/comp.wxml"></import>
+模板:
+```html
+<import src="/path/to/comp.wxml"></import>
 
-	<template is="item" data="{{...comp}}"/>
-	```
+<template is="item" data="{{...comp}}"/>
+```
 
-	Page:
-	```js
-	var P = require('./wxpage')
-	P({
-		comps: [require('/path/to/comp')]
-	})
-	```
+Page:
+```js
+var P = require('./wxpage')
+P({
+	comps: [require('/path/to/comp')]
+})
+```
 
 #### ● 扩展的生命周期
 
-	同页面的生命周期
+同页面的生命周期
 
 #### ● VM实例方法
 
-	- **$set({...})**
+- **$set({...})**
 
-		同 **this.setData({...})**，但只对当前组件数据生效
-		```js
-		vm.$set({
-			title: 'This is component'
-		})
-		```
+	同 **this.setData({...})**，但只对当前组件数据生效
+	```js
+	vm.$set({
+		title: 'This is component'
+	})
+	```
 
-	- **$data()**
+- **$data()**
 
-		获取当前组件的 `data` 对象
+	获取当前组件的 `data` 对象
 
 ### 页面
 #### ● 定义
 
-	示例：
-	```js
-	var P = require('./wxpage')
-	P('index', {
-		data: {/*...*/},
-		onLaunch: function () {
+示例：
+```js
+var P = require('./wxpage')
+P('index', {
+	data: {/*...*/},
+	onLaunch: function () {
 
-		},
-		onLoad: function () {
-			// do something
-		}
-	})
-	```
+	},
+	onLoad: function () {
+		// do something
+	}
+})
+```
 
 
 #### ● 扩展的生命周期
 
-	- **onLaunch()**
+- **onLaunch()**
 
-		小程序第一次运行的时候调用，此时对应的页面并未被加载。
+	小程序第一次运行的时候调用，此时对应的页面并未被加载。
 
-	- **onAwake(time`<Number>`)**
+- **onAwake(time`<Number>`)**
 
-		小程序进入后台模式后再激活的时候触发。`time`是耗时。
+	小程序进入后台模式后再激活的时候触发。`time`是耗时。
 
-	- **onPreload(res)**
+- **onPreload(res)**
 
-		调用 this.**$preload**(url) 的时候触发，此时对应的页面并未被加载，`res`:
-		```
-		{
-			url: '', //完整的来源url
-			query: {} //url上解析出来的查询参数
-		}
-		```
+	调用 this.**$preload**(url) 的时候触发，此时对应的页面并未被加载，`res`:
+	```
+	{
+		url: '', //完整的来源url
+		query: {} //url上解析出来的查询参数
+	}
+	```
 
-	- **onNavigate(res)**
+- **onNavigate(res)**
 
-		页面间跳转开始时调用，此时对应的页面并未被加载，`res`:
-		```
-		{
-			url: '', //完整的来源url
-			query: {} //url上解析出来的查询参数
-		}
-		```
+	页面间跳转开始时调用，此时对应的页面并未被加载，`res`:
+	```
+	{
+		url: '', //完整的来源url
+		query: {} //url上解析出来的查询参数
+	}
+	```
 
 
 #### ● 实例属性
 
-	- **$name**
+- **$name**
 
-		当前页面名称
+	当前页面名称
 
-	- **$state**
+- **$state**
 
-		页面的一些状态集合，有以下字段：
+	页面的一些状态集合，有以下字段：
 
-		- firstOpen <`Boolean`> 是否小程序被打开首个启动页面
+	- firstOpen <`Boolean`> 是否小程序被打开首个启动页面
 
-	- **$cache**
+- **$cache**
 
-		本地缓存的封装, 方法如下：
+	本地缓存的封装, 方法如下：
 
-		- `set(key, value[, expire][, cb])` 如果传 `cb` 参数，会使用异步模式并回调
-		- `get(key[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
+	- `set(key, value[, expire][, cb])` 如果传 `cb` 参数，会使用异步模式并回调
+	- `get(key[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
 
-	- **$session**
+- **$session**
 
-		使用本地缓存实现的session, 小程序退出后session会消息，`适用于大数据对象的临时存储` 方法如下：
+	使用本地缓存实现的session, 小程序退出后session会消息，`适用于大数据对象的临时存储` 方法如下：
 
-		- `set(key, value[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
-		- `get(key[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
+	- `set(key, value[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
+	- `get(key[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
 
-	- **$emitter**
+- **$emitter**
 
-		页面内的消息模块，作用于页面实例与及引用的组件实例，方法：
+	页面内的消息模块，作用于页面实例与及引用的组件实例，方法：
 
-		 - `on`   监听
-		 - `emit` 派发
-		 - `off`  取消监听
+	 - `on`   监听
+	 - `emit` 派发
+	 - `off`  取消监听
 
 
 #### ● 实例方法
 
-	- **$route**(pagename[, config]) => 别名 **$navigate**
+- **$route**(pagename[, config]) => 别名 **$navigate**
 
-		wx.`navigateTo`的封装。跳转到指定页面，pagename 可以带上 `queryString`, 例如
+	wx.`navigateTo`的封装。跳转到指定页面，pagename 可以带上 `queryString`, 例如
 
-		```js
-		this.$route('play?vid=xxx&cid=xxx')
-		```
+	```js
+	this.$route('play?vid=xxx&cid=xxx')
+	```
 
-	- **$redirect**(pagename[, config])
+- **$redirect**(pagename[, config])
 
-		wx.`redirectTo`的封装。跳转到指定页面, **替换页面，不产生历史**，pagename 可以带上 `queryString`, 例如
+	wx.`redirectTo`的封装。跳转到指定页面, **替换页面，不产生历史**，pagename 可以带上 `queryString`, 例如
 
-		```js
-		this.$redirect('play?vid=xxx&cid=xxx')
-		```
+	```js
+	this.$redirect('play?vid=xxx&cid=xxx')
+	```
 
-	- **$switch**(pagename[, config])
+- **$switch**(pagename[, config])
 
-		wx.`switchTab`的封装。
+	wx.`switchTab`的封装。
 
-	- **$back**([delta])
+- **$back**([delta])
 
-		wx.`navigateBack`的封装。
-		```js
-		this.$back()
-		```
+	wx.`navigateBack`的封装。
+	```js
+	this.$back()
+	```
 
-	- **$preload**(pagename)
+- **$preload**(pagename)
 
-		提前预加载指定页面（会触发对应页面的`onPreload`声明周期）
-		```js
-		this.$preload('play?vid=xxx&cid=xxx')
-		```
+	提前预加载指定页面（会触发对应页面的`onPreload`声明周期）
+	```js
+	this.$preload('play?vid=xxx&cid=xxx')
+	```
 
-	- **$bindRoute**()
+- **$bindRoute**()
 
-		点击代理方法，绑定 `$onRoute` 逻辑，在元素上声明 `data-url` 作为跳转地址，支持切面方法：
-		+ `data-before` 跳转前执行
-		+ `data-after` 	跳转后执行
+	点击代理方法，绑定 `$onRoute` 逻辑，在元素上声明 `data-url` 作为跳转地址，支持切面方法：
+	+ `data-before` 跳转前执行
+	+ `data-after` 	跳转后执行
 
-		示例：
-		```html
-		<button
-			bindtap="$bindRoute"
-			data-url="/pages/play"
-			data-before="onClickBefore"
-		>click redirect</button>
-		```
+	示例：
+	```html
+	<button
+		bindtap="$bindRoute"
+		data-url="/pages/play"
+		data-before="onClickBefore"
+	>click redirect</button>
+	```
 
-	- **$bindRedirect**()
+- **$bindRedirect**()
 
-		同 **$bindRoute**, 绑定 `$onRedirect`
+	同 **$bindRoute**, 绑定 `$onRedirect`
 
-	- **$bindSwitch**()
+- **$bindSwitch**()
 
-		同 **$bindRoute**, 绑定 `$onSwitch`
+	同 **$bindRoute**, 绑定 `$onSwitch`
 
-	- **$on**(key, handler)
+- **$on**(key, handler)
 
-		监听跨页面间的消息
+	监听跨页面间的消息
 
-	- **$emit**(key, data)
+- **$emit**(key, data)
 
-		派发页面间的消息
+	派发页面间的消息
 
-	- **$off**(key, handler)
+- **$off**(key, handler)
 
-		取消监听消息
+	取消监听消息
 
-	- **$put**(id, value)
+- **$put**(id, value)
 
-		指定 `id` 存在一份数据，可以为任何类型，以供其它逻辑获取使用
+	指定 `id` 存在一份数据，可以为任何类型，以供其它逻辑获取使用
 
-	- **$take**(id)
+- **$take**(id)
 
-		根据 `id` 获取数据，数据只能被存在一次，获取一次。如果只存放一次，第二次获取
-		会得到 null 。
+	根据 `id` 获取数据，数据只能被存在一次，获取一次。如果只存放一次，第二次获取
+	会得到 null 。
 
-		示例：
-		```js
-		this.$put('play:prefetch', new Promise(function (resolve, reject) {
-			wx.request(url, function (err, data) {
-				resolve(data)
-			})
-		}))
-
-		this.$take('play:prefetch').then(function (data) {
-			// get data
+	示例：
+	```js
+	this.$put('play:prefetch', new Promise(function (resolve, reject) {
+		wx.request(url, function (err, data) {
+			resolve(data)
 		})
+	}))
 
-		this.$take('play:prefetch') // => null
-		```
+	this.$take('play:prefetch').then(function (data) {
+		// get data
+	})
+
+	this.$take('play:prefetch') // => null
+	```
