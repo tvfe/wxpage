@@ -190,7 +190,7 @@ P('index', {
 
 	页面的一些状态集合，有以下字段：
 
-	- firstOpen <`Boolean`> 是否小程序被打开首个启动页面
+	- firstOpen <`Boolean`> 是否首个被小程序启动的页面
 
 - **$cache**
 
