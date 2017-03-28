@@ -208,7 +208,7 @@ P('index', {
 
 - **$emitter**
 
-	页面内的消息模块，作用于页面实例与及引用的组件实例，方法：
+	页面内的消息模块，作用于当前页面实例与及引用的子组件实例，方法：
 
 	 - `on`   监听
 	 - `emit` 派发
@@ -216,6 +216,14 @@ P('index', {
 
 
 #### ❖ P`/`实例方法
+
+- **$setData**([prefix<`String`>, ]obj)
+
+	指定 `prefix` 的时候可以为data的每一个项添加访问路径前缀。不传相当于 **setData(obj)**
+
+- **$curPage**()
+
+	获取当前页面实例。取 **getCurrentPages** 的最后一个项。
 
 - **$route**(pagename[, config]) => 别名 **$navigate**
 
@@ -280,7 +288,7 @@ P('index', {
 
 - **$emit**(key, data)
 
-	派发页面间的消息
+	派发页面间的消息。
 
 - **$off**(key, handler)
 
