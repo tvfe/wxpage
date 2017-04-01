@@ -608,7 +608,11 @@ function route(type, cfg, args) {
 		pending = false
 	}, 2000)
 	exportee.emit('navigateTo', cfg.url)
-	return wx[type].apply(wx, args)
+
+	// 会存在不兼容接口，例如：reLaunch
+	if (wx[type]) {
+		return wx[type].apply(wx, args)
+	}
 }
 exportee.navigateTo = function (cfg) {
 	return route('navigateTo', cfg, arguments)
@@ -618,6 +622,9 @@ exportee.redirectTo = function (cfg) {
 }
 exportee.switchTab = function (cfg) {
 	return route('switchTab', cfg, arguments)
+}
+exportee.reLaunch = function (cfg) {
+	return route('reLaunch', cfg, arguments)
 }
 exportee.navigateBack = function () {
   return wx.navigateBack.apply(wx, arguments)
@@ -664,6 +671,7 @@ function WXPage(name, option) {
 		dispatcher.on('navigateTo:'+name, onNavigateHandler)
 		dispatcher.on('redirectTo:'+name, onNavigateHandler)
 		dispatcher.on('switchTab:'+name, onNavigateHandler)
+		dispatcher.on('reLaunch:'+name, onNavigateHandler)
 	}
 	/**
 	 * Preload lifecycle method
@@ -693,9 +701,10 @@ function WXPage(name, option) {
 	/**
 	 * Instance method hook
 	 */
-	option.$route = option.$navigate = route({type: 'navigateTo'})
-	option.$redirect = route({type: 'redirectTo'})
-	option.$switch = route({type: 'switchTab'})
+	option.$route = option.$navigate = navigate
+	option.$redirect = redirect
+	option.$switch = switchTab
+	option.$launch = reLaunch
 	option.$back = back
 
 	/**
@@ -704,6 +713,7 @@ function WXPage(name, option) {
 	option.$bindRoute = option.$bindNavigate = bindNavigate
 	option.$bindRedirect = bindRedirect
 	option.$bindSwitch = bindSwitch
+	option.$bindReLaunch = bindReLaunch
 
 	/**
 	 * Cross pages message methods
@@ -790,7 +800,7 @@ function pageRedirectorDelegate(emitter, keys) {
 		})
 	})
 }
-pageRedirectorDelegate(redirector, ['navigateTo', 'redirectTo', 'switchTab'])
+pageRedirectorDelegate(redirector, ['navigateTo', 'redirectTo', 'switchTab', 'reLaunch'])
 
 /**
  * Application wrapper
@@ -835,19 +845,13 @@ function appHideHandler() {
 var navigate = route({type: 'navigateTo'})
 var redirect = route({type: 'redirectTo'})
 var switchTab = route({type: 'switchTab'})
-var routeMethods = {navigate, redirect, switchTab}
-function back(delta) {
-	wx.navigateBack({
-		delta: delta || 1
-	})
-}
-function preload(url){
-	var name = getPageName(url)
-	name && dispatcher.emit('preload:'+name, url, fns.queryParse(url.split('?')[1]))
-}
+var reLaunch = route({type: 'reLaunch'})
 var bindNavigate = clickDelegate('navigate')
 var bindRedirect = clickDelegate('redirect')
 var bindSwitch = clickDelegate('switchTab')
+var bindReLaunch = clickDelegate('reLaunch')
+
+var routeMethods = {navigate, redirect, switchTab, reLaunch}
 function clickDelegate(type) {
 	var _route = routeMethods[type]
 	return function (e) {
@@ -865,6 +869,15 @@ function clickDelegate(type) {
 			if (ctx && after && ctx[after]) ctx[after].call(ctx, e)
 		}
 	}
+}
+function back(delta) {
+	wx.navigateBack({
+		delta: delta || 1
+	})
+}
+function preload(url){
+	var name = getPageName(url)
+	name && dispatcher.emit('preload:'+name, url, fns.queryParse(url.split('?')[1]))
 }
 /**
  * Navigate handler
