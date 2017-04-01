@@ -245,6 +245,10 @@ P('index', {
 
 	wx.`switchTab`的封装。
 
+- **$launch**(pagename[, config])
+
+	wx.`reLaunch`的封装。
+
 - **$back**([delta])
 
 	wx.`navigateBack`的封装。
