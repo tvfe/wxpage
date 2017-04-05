@@ -1,6 +1,6 @@
 {
-  "name": "wxpage",
-  "version": "0.0.7",
+  "name": "@tencent/wxpage",
+  "version": "0.0.8",
   "description": "WXPage is a lightweight framework for weixin tinyapp.",
   "main": "page.js",
   "scripts": {
@@ -12,8 +12,5 @@
   "license": "MIT",
   "devDependencies": {
     "webpack": "^2.2.1"
-  },
-  "dependencies": {
-    "@tencent/setting": "^1.0.0"
   }
 }
