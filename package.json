@@ -1,5 +1,5 @@
 {
-  "name": "@tencent/wxpage",
+  "name": "wxpage",
   "version": "0.0.7",
   "description": "WXPage is a lightweight framework for weixin tinyapp.",
   "main": "page.js",
