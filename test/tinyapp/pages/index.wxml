@@ -2,6 +2,10 @@
 
 <view class="wxpage">
 	<template is="header" data="{{...header}}"></template>
+	<view style="position: fixed;bottom: 0;left: 0;right: 0;height: 50px;background-color: blue;"
+		binddbtap="onTouchend"
+		binddbclick="onTTap"
+	></view>
 	<button bindtap="onPlay">Go go play page($route)</button>
 	<button bindtap="$bindRoute"
 		data-url="/pages/play?cid=1"

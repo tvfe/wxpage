@@ -11,20 +11,5 @@
       "backgroundColor": "#fff",
       "backgroundTextStyle": "dark",
       "enablePullDownRefresh": true
-  },
-  "tabBar": {
-      "color": "#222",
-      "backgroundColor": "#fff",
-      "selectedColor": "#FF7000",
-      "borderStyle": "black",
-      "position": "bottom",
-      "list": [{
-          "pagePath": "pages/index",
-          "text": "首页"
-      },{
-          "pagePath": "pages/channel",
-          "text": "频道"
-      }],
-      "debug": true
   }
 }
