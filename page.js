@@ -8,6 +8,8 @@ var Component = require('./lib/component.js')
 var dispatcher = new message()
 var channel = {}
 var hasPageLoaded = 0
+var isAppLaunched = 0
+var isAppShowed = 0
 var hideTime = 0
 var routeResolve
 var nameResolve
@@ -147,6 +149,16 @@ function WXPage(name, option) {
 	if (option.onLaunch) {
 		option.onLaunch()
 	}
+	if (option.onAppLaunch) {
+		isAppLaunched ? option.onAppLaunch.apply(option, isAppLaunched) : dispatcher.on('app:launch', function (args) {
+			option.onAppLaunch.apply(option, args)
+		})
+	}
+	if (option.onAppShow) {
+		isAppLaunched ? option.onAppShow.apply(option, isAppLaunched) : dispatcher.on('app:show', function (args) {
+			option.onAppShow.apply(option, args)
+		})
+	}
 
 	// extend page config
 	extendPageAfter && extendPageAfter(name, option, modules)
@@ -180,6 +192,7 @@ function Application (option) {
 	 */
 	option.onShow = option.onShow ? fns.wrapFun(option.onShow, appShowHandler) : appShowHandler
 	option.onHide = option.onHide ? fns.wrapFun(option.onHide, appHideHandler) : appHideHandler
+	option.onLaunch = option.onLaunch ? fns.wrapFun(option.onLaunch, appLaunchHandler) : appLaunchHandler
 
 	if (option.onAwake) {
 		message.on('app:sleep', function(t){
@@ -191,11 +204,20 @@ function Application (option) {
 	 */
 	App(option)
 }
+function appLaunchHandler() {
+	isAppLaunched = [].slice.call(arguments)
+	message.emit('app:launch', isAppLaunched)
+}
 function appShowHandler () {
-	if (!hideTime) return
-	var t = hideTime
-	hideTime = 0
-	message.emit('app:sleep', new Date() - t)
+	isAppShowed = [].slice.call(arguments)
+	try {
+		message.emit('app:show', isAppShowed)
+	} finally {
+		if (!hideTime) return
+		var t = hideTime
+		hideTime = 0
+		message.emit('app:sleep', new Date() - t)
+	}
 }
 function appHideHandler() {
 	hideTime = new Date()
@@ -208,12 +230,12 @@ var navigate = route({type: 'navigateTo'})
 var redirect = route({type: 'redirectTo'})
 var switchTab = route({type: 'switchTab'})
 var reLaunch = route({type: 'reLaunch'})
+var routeMethods = {navigate, redirect, switchTab, reLaunch}
 var bindNavigate = clickDelegate('navigate')
 var bindRedirect = clickDelegate('redirect')
 var bindSwitch = clickDelegate('switchTab')
 var bindReLaunch = clickDelegate('reLaunch')
 
-var routeMethods = {navigate, redirect, switchTab, reLaunch}
 function clickDelegate(type) {
 	var _route = routeMethods[type]
 	return function (e) {

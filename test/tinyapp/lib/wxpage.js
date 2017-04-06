@@ -493,6 +493,8 @@ function useComponents(option, comps, label, emitter) {
 						case 'onPreload':
 						case 'onLaunch':
 						case 'onAwake':
+						case 'onAppLaunch':
+						case 'onAppShow':
 							option[k] = fns.wrapFun(option[k], v)
 							return
 						case 'data':
@@ -608,7 +610,11 @@ function route(type, cfg, args) {
 		pending = false
 	}, 2000)
 	exportee.emit('navigateTo', cfg.url)
-	return wx[type].apply(wx, args)
+
+	// 会存在不兼容接口，例如：reLaunch
+	if (wx[type]) {
+		return wx[type].apply(wx, args)
+	}
 }
 exportee.navigateTo = function (cfg) {
 	return route('navigateTo', cfg, arguments)
@@ -618,6 +624,9 @@ exportee.redirectTo = function (cfg) {
 }
 exportee.switchTab = function (cfg) {
 	return route('switchTab', cfg, arguments)
+}
+exportee.reLaunch = function (cfg) {
+	return route('reLaunch', cfg, arguments)
 }
 exportee.navigateBack = function () {
   return wx.navigateBack.apply(wx, arguments)
@@ -639,6 +648,8 @@ var Component = __webpack_require__(3)
 var dispatcher = new message()
 var channel = {}
 var hasPageLoaded = 0
+var isAppLaunched = 0
+var isAppShowed = 0
 var hideTime = 0
 var routeResolve
 var nameResolve
@@ -664,6 +675,7 @@ function WXPage(name, option) {
 		dispatcher.on('navigateTo:'+name, onNavigateHandler)
 		dispatcher.on('redirectTo:'+name, onNavigateHandler)
 		dispatcher.on('switchTab:'+name, onNavigateHandler)
+		dispatcher.on('reLaunch:'+name, onNavigateHandler)
 	}
 	/**
 	 * Preload lifecycle method
@@ -693,9 +705,10 @@ function WXPage(name, option) {
 	/**
 	 * Instance method hook
 	 */
-	option.$route = option.$navigate = route({type: 'navigateTo'})
-	option.$redirect = route({type: 'redirectTo'})
-	option.$switch = route({type: 'switchTab'})
+	option.$route = option.$navigate = navigate
+	option.$redirect = redirect
+	option.$switch = switchTab
+	option.$launch = reLaunch
 	option.$back = back
 
 	/**
@@ -704,6 +717,7 @@ function WXPage(name, option) {
 	option.$bindRoute = option.$bindNavigate = bindNavigate
 	option.$bindRedirect = bindRedirect
 	option.$bindSwitch = bindSwitch
+	option.$bindReLaunch = bindReLaunch
 
 	/**
 	 * Cross pages message methods
@@ -775,6 +789,16 @@ function WXPage(name, option) {
 	if (option.onLaunch) {
 		option.onLaunch()
 	}
+	if (option.onAppLaunch) {
+		isAppLaunched ? option.onAppLaunch.apply(option, isAppLaunched) : dispatcher.on('app:launch', function (args) {
+			option.onAppLaunch.apply(option, args)
+		})
+	}
+	if (option.onAppShow) {
+		isAppLaunched ? option.onAppShow.apply(option, isAppLaunched) : dispatcher.on('app:show', function (args) {
+			option.onAppShow.apply(option, args)
+		})
+	}
 
 	// extend page config
 	extendPageAfter && extendPageAfter(name, option, modules)
@@ -790,7 +814,7 @@ function pageRedirectorDelegate(emitter, keys) {
 		})
 	})
 }
-pageRedirectorDelegate(redirector, ['navigateTo', 'redirectTo', 'switchTab'])
+pageRedirectorDelegate(redirector, ['navigateTo', 'redirectTo', 'switchTab', 'reLaunch'])
 
 /**
  * Application wrapper
@@ -808,6 +832,7 @@ function Application (option) {
 	 */
 	option.onShow = option.onShow ? fns.wrapFun(option.onShow, appShowHandler) : appShowHandler
 	option.onHide = option.onHide ? fns.wrapFun(option.onHide, appHideHandler) : appHideHandler
+	option.onLaunch = option.onLaunch ? fns.wrapFun(option.onLaunch, appLaunchHandler) : appLaunchHandler
 
 	if (option.onAwake) {
 		message.on('app:sleep', function(t){
@@ -819,11 +844,20 @@ function Application (option) {
 	 */
 	App(option)
 }
+function appLaunchHandler() {
+	isAppLaunched = [].slice.call(arguments)
+	message.emit('app:launch', isAppLaunched)
+}
 function appShowHandler () {
-	if (!hideTime) return
-	var t = hideTime
-	hideTime = 0
-	message.emit('app:sleep', new Date() - t)
+	isAppShowed = [].slice.call(arguments)
+	try {
+		message.emit('app:show', isAppShowed)
+	} finally {
+		if (!hideTime) return
+		var t = hideTime
+		hideTime = 0
+		message.emit('app:sleep', new Date() - t)
+	}
 }
 function appHideHandler() {
 	hideTime = new Date()
@@ -835,19 +869,13 @@ function appHideHandler() {
 var navigate = route({type: 'navigateTo'})
 var redirect = route({type: 'redirectTo'})
 var switchTab = route({type: 'switchTab'})
-var routeMethods = {navigate, redirect, switchTab}
-function back(delta) {
-	wx.navigateBack({
-		delta: delta || 1
-	})
-}
-function preload(url){
-	var name = getPageName(url)
-	name && dispatcher.emit('preload:'+name, url, fns.queryParse(url.split('?')[1]))
-}
+var reLaunch = route({type: 'reLaunch'})
+var routeMethods = {navigate, redirect, switchTab, reLaunch}
 var bindNavigate = clickDelegate('navigate')
 var bindRedirect = clickDelegate('redirect')
 var bindSwitch = clickDelegate('switchTab')
+var bindReLaunch = clickDelegate('reLaunch')
+
 function clickDelegate(type) {
 	var _route = routeMethods[type]
 	return function (e) {
@@ -865,6 +893,15 @@ function clickDelegate(type) {
 			if (ctx && after && ctx[after]) ctx[after].call(ctx, e)
 		}
 	}
+}
+function back(delta) {
+	wx.navigateBack({
+		delta: delta || 1
+	})
+}
+function preload(url){
+	var name = getPageName(url)
+	name && dispatcher.emit('preload:'+name, url, fns.queryParse(url.split('?')[1]))
 }
 /**
  * Navigate handler

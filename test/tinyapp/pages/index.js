@@ -11,7 +11,11 @@ P('index', {
 	onLaunch: function () {
 		console.log('## On index page launch', new Date() - d, 'ms')
 	},
+	onAppLaunch: function (opts) {
+		console.log('## [Page] APP Launch', opts)
+	},
 	onLoad: function() {
+		console.timeEnd('Run2')
 		console.log('## On index page load')
 		this.$preload('play?cid=456')
 
@@ -46,5 +50,11 @@ P('index', {
 	},
 	onClickAfter: function (e) {
 		// console.log('## On click after', e)
+	},
+	onTouchend: function (e) {
+		console.log('--------')
+	},
+	onTTap: function () {
+		console.log('###')
 	}
 })
