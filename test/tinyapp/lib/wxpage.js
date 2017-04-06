@@ -849,9 +849,12 @@ function appLaunchHandler() {
 	message.emit('app:launch', isAppLaunched)
 }
 function appShowHandler () {
-	isAppShowed = [].slice.call(arguments)
 	try {
-		message.emit('app:show', isAppShowed)
+		if (!isAppShowed) {
+			// call onAppShow only once
+			isAppShowed = [].slice.call(arguments)
+			message.emit('app:show', isAppShowed)
+		}
 	} finally {
 		if (!hideTime) return
 		var t = hideTime
