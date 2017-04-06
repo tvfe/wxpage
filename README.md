@@ -31,6 +31,15 @@ var A = require('./wxpage').A
 var C = require('./wxpage').C
 ```
 
+使用 [`CLI`](https://github.com/tvfe/wxpage-cli) 初始化项目：
+
+```bash
+npm install wxpage-cli -g
+
+wxpage init
+```
+
+
 ### 程序
 #### ❖ A`/`定义
 
