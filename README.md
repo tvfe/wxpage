@@ -155,6 +155,23 @@ P('index', {
 
 	小程序第一次运行的时候调用，此时对应的页面并未被加载。
 
+- **onAppLaunch(opts)**
+
+	App.onLaunch 触发时调用。
+	opts:
+	- `path`	String	打开小程序的路径
+	- `query`	Object	打开小程序的query
+	- `scene`	Number	打开小程序的场景值
+
+
+- **onAppLaunch(opts)**
+
+	App.onShow 触发时调用。
+	opts:
+	- `path`	String	打开小程序的路径
+	- `query`	Object	打开小程序的query
+	- `scene`	Number	打开小程序的场景值
+
 - **onAwake(time`<Number>`)**
 
 	小程序进入后台模式后再激活的时候触发。`time`是耗时。
