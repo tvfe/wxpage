@@ -146,8 +146,8 @@ function WXPage(name, option) {
 	})
 
 	// call on launch
-	if (option.onLaunch) {
-		option.onLaunch()
+	if (option.onPageLaunch) {
+		option.onPageLaunch()
 	}
 	if (option.onAppLaunch) {
 		isAppLaunched ? option.onAppLaunch.apply(option, isAppLaunched) : dispatcher.on('app:launch', function (args) {

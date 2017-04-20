@@ -1,3 +1,8 @@
+/*!
+ * wxpage v0.0.11
+ * https://github.com/tvfe/wxpage
+ * License MIT
+ */
 module.exports =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -786,8 +791,8 @@ function WXPage(name, option) {
 	})
 
 	// call on launch
-	if (option.onLaunch) {
-		option.onLaunch()
+	if (option.onPageLaunch) {
+		option.onPageLaunch()
 	}
 	if (option.onAppLaunch) {
 		isAppLaunched ? option.onAppLaunch.apply(option, isAppLaunched) : dispatcher.on('app:launch', function (args) {
