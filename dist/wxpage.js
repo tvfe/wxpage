@@ -1,5 +1,5 @@
 /*!
- * wxpage v0.0.11
+ * @tencent/wxpage v0.0.11
  * https://github.com/tvfe/wxpage
  * License MIT
  */
