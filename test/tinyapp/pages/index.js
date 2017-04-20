@@ -8,7 +8,7 @@ P('index', {
 	],
 	data: {
 	},
-	onLaunch: function () {
+	onPageLaunch: function () {
 		console.log('## On index page launch', new Date() - d, 'ms')
 	},
 	onAppLaunch: function (opts) {
@@ -30,6 +30,15 @@ P('index', {
 		console.log('[Step 2] session set "session"')
 		this.$session.set('session', {name: 'wxpage'})
 		console.log('[Step 3] session get', this.$session.get('session'))
+	},
+	onReady: function () {
+		var context = wx.createContext()
+		context.drawImage('https://vm.gtimg.cn/tencentvideo/vstyle/web/v4/style/img/common/sprite_head_logo.svg', 0,0,100,200)
+		// context.draw()
+		wx.drawCanvas({
+      canvasId: 'canvas',
+      actions: context.getActions() // 获取绘图动作数组
+    })
 	},
 	onPlay: function () {
 		this.$route('play?cid=123')

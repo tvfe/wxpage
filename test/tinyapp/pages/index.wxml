@@ -2,6 +2,7 @@
 
 <view class="wxpage">
 	<template is="header" data="{{...header}}"></template>
+	<canvas style="height: 100px;width: 250px;" canvas-id="canvas"></canvas>
 	<view style="position: fixed;bottom: 0;left: 0;right: 0;height: 50px;background-color: blue;"
 		binddbtap="onTouchend"
 		binddbclick="onTTap"
