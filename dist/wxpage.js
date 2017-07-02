@@ -1,5 +1,5 @@
 /*!
- * wxpage v0.0.11
+ * wxpage v0.0.12
  * https://github.com/tvfe/wxpage
  * License MIT
  */
@@ -537,7 +537,7 @@ function component(name, ctor/*[ ctor ]*/) {
 			},
 			$data: function () {
 				if (!ctx) return dat
-				else if (cid) return ctx[cid]
+				else if (cid) return ctx.data[cid]
 			},
 			$on: function(type, handler) {
 				if (!emitter) return noop
