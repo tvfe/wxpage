@@ -23,7 +23,7 @@
 
 ### 使用
 
-将[dist/wxpage.js](http://git.code.oa.com/vfe-components/wxpage/blob/master/dist/wxpage.js) 放置到你的项目目录下，例如: "lib/wxpage.js"。使用[DEMO](http://git.code.oa.com/vfe-components/wxpage/tree/master/test/tinyapp)
+将[dist/wxpage.js](https://github.com/tvfe/wxpage/blob/github/dist/wxpage.js) 放置到你的项目目录下，例如: "lib/wxpage.js"。使用[DEMO](https://github.com/tvfe/wxpage-app)
 
 ```js
 var P = require('./wxpage')
