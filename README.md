@@ -352,4 +352,4 @@ P('index', {
 
 腾讯视频 | 王者荣耀攻略宝典
 ------------ | -------------
-<img src="https://i.gtimg.cn/qqlive/images/20170301/wxapp.png" width="48"> | <img src="https://i.gtimg.cn/qqlive/images/tinyapp_pvp_qrcode/tinyapp_pvp.jpg" width="48">
+<img src="https://i.gtimg.cn/qqlive/images/20170301/wxapp.png" width="54"/> | <img src="https://i.gtimg.cn/qqlive/images/tinyapp_pvp_qrcode/tinyapp_pvp.jpg" width="54"/>
