@@ -350,6 +350,6 @@ P('index', {
 
 ## 谁在用
 
-腾讯视频 | 王者荣耀攻略宝典 | 腾讯新闻-何润锋工作室
+腾讯视频 | 王者荣耀攻略宝典 | 何润锋工作室
 ------------ | ------------- | -------------
 <img src="https://i.gtimg.cn/qqlive/images/20170301/wxapp.png" width="120"/> | <img src="https://i.gtimg.cn/qqlive/images/tinyapp_pvp_qrcode/tinyapp_pvp.jpg" width="120"/> | <img src="https://i.gtimg.cn/qqlive/images/tinyapp_qrcodes/qqnews_hrf.jpg" width="120"/>
