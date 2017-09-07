@@ -226,14 +226,34 @@ P('index', {
   本地缓存的封装, 方法如下：
 
   - `set(key, value[, expire][, cb])` 如果传 `cb` 参数，会使用异步模式并回调，否则直接同步返回结果。
-    * `value` 缓存数据，可以为对象
-    * `expire` 缓存过期时间，单位为毫秒
+    * `value`   缓存数据，可以为对象
+    * `expire`  缓存过期时间，单位为毫秒
+    * `cb`      可选，异步写的时候回调，接收参数：cb(err), err不为空代表失败。
   - `get(key[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
+    * `cb`      可选，异步读的时候回调，接收参数：cb(err, data), err不为空代表失败。
+
   ```js
   Page({
     onLoad: function () {
+      // 同步写
       this.$cache.set('page_data', {
           name: '首页'
+      })
+      // 异步写
+      this.$cache.set('page_data_another', {
+          name: '首页'
+      }, function (err) {
+        // success or fail
+      })
+      var data = this.$cache.set('page_data') // {name : '首页'}
+      // 异步读
+      this.$cache.get('page_data', function (err, data) {
+        // success or fail
+        if (err) {
+          console.log('Get data error', err)
+        } else {
+          console.log('Get data success', data)
+        }
       })
     }
   })
