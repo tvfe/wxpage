@@ -226,7 +226,7 @@ P('index', {
 
 	本地缓存的封装, 方法如下：
 
-	- `set(key, value[, expire][, cb])` 如果传 `cb` 参数，会使用异步模式并回调
+	- `set(key, value[, expire][, cb])` 如果传 `cb` 参数，会使用异步模式并回调。`expire`: 过去时间，单位为秒。
 	- `get(key[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
 
 - **$session**
