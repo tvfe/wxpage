@@ -1,5 +1,5 @@
 /*!
- * wxpage v0.0.13
+ * wxpage v0.0.14
  * https://github.com/tvfe/wxpage
  * License MIT
  */
@@ -770,7 +770,12 @@ function WXPage(name, option) {
 		}
 	}
 	option.$curPage = function () {
-		return getCurrentPages().slice(0).pop()
+		return getPage()
+	}
+	option.$curPageName = function () {
+		var route = getPage().route
+		if (!route) return ''
+		return getPageName(route)
 	}
 	/**
 	 * AOP life-cycle methods hook
@@ -931,6 +936,9 @@ function route ({type}) {
 		config.url = pagepath + (parts[1] ? '?' + parts[1] : '')
 		redirector[type](config)
 	}
+}
+function getPage() {
+	return getCurrentPages().slice(0).pop()
 }
 function getPageName(url) {
 	var m = /^[\w\-]+(?=\?|$)/.exec(url)

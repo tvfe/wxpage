@@ -275,6 +275,11 @@ P('index', {
 
   获取当前页面实例。取 **getCurrentPages** 的最后一个项。
 
+- **$curPageName**()
+
+  获取当前页面实例对应的页面名。根据[A.config.route](#-a扩展的配置config) 的配置解析当前页面实例的route。
+  > Notice: 由于基础库1.2.0以下不支持 Page.prototype.route，故不兼容场景只能取到空字符串
+
 - **$route**(pagename[, config]) => 别名 **$navigate**
 
   wx.`navigateTo`的封装。跳转到指定页面，pagename 可以带上 `queryString`, 例如
