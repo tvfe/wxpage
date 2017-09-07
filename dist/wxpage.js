@@ -1,5 +1,5 @@
 /*!
- * wxpage v0.0.12
+ * wxpage v0.0.13
  * https://github.com/tvfe/wxpage
  * License MIT
  */
@@ -493,6 +493,7 @@ function useComponents(option, comps, label, emitter) {
 						case 'onUnload':
 						case 'onPullDownRefresh':
 						case 'onReachBottom':
+						case 'onPageScroll':
 						// extend
 						case 'onNavigate':
 						case 'onPreload':
