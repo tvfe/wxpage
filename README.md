@@ -1,7 +1,7 @@
 ## WXPage
 [![npm version](https://badge.fury.io/js/wxpage.svg)](https://www.npmjs.com/package/wxpage)
 
-[WXPage](http://git.code.oa.com/vfe-components/wxpage) 是一个极其轻量的微信小程序开发框架，其中的API蕴含了“极致页面打开速度的思想”，为可维护性与开发效率而设计的功能，框架来自“腾讯视频”小程序的项目沉淀。
+[WXPage](https://github.com/tvfe/wxpage#wxpage) 是一个极其轻量的微信小程序开发框架，其中的API蕴含了“极致页面打开速度的思想”，为可维护性与开发效率而设计的功能，框架来自“腾讯视频”小程序的项目沉淀。
 
 
 ## 目录
