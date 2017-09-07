@@ -1,5 +1,8 @@
 ## WXPage
-[WXPage](http://git.code.oa.com/vfe-components/wxpage) 是一个极其轻量的微信小程序开发框架，其中的API蕴含了“极致页面打开速度的思想”，为可维护性与开发效率而设计的功能，框架来自“腾讯视频”小程序的项目沉淀。
+[![npm version](https://badge.fury.io/js/wxpage.svg)](https://www.npmjs.com/package/wxpage)
+
+[WXPage](https://github.com/tvfe/wxpage#wxpage) 是一个极其轻量的微信小程序开发框架，其中的API蕴含了“极致页面打开速度的思想”，为可维护性与开发效率而设计的功能，框架来自“腾讯视频”小程序的项目沉淀。
+
 
 ## 目录
 
@@ -20,6 +23,7 @@
 	- [扩展的生命周期](#-p扩展的生命周期)
 	- [实例属性](#-p实例属性)
 	- [实例方法](#-p实例方法)
+* [案例](#谁在用)
 
 ### 使用
 
@@ -168,18 +172,18 @@ P('index', {
 
 	App.onLaunch 触发时调用。
 	opts:
-	- `path`	String	打开小程序的路径
-	- `query`	Object	打开小程序的query
-	- `scene`	Number	打开小程序的场景值
+	- `path`  String  打开小程序的路径
+	- `query` Object  打开小程序的query
+	- `scene` Number  打开小程序的场景值
 
 
 - **onAppLaunch(opts)**
 
 	App.onShow 触发时调用。
 	opts:
-	- `path`	String	打开小程序的路径
-	- `query`	Object	打开小程序的query
-	- `scene`	Number	打开小程序的场景值
+	- `path`  String  打开小程序的路径
+	- `query` Object  打开小程序的query
+	- `scene` Number  打开小程序的场景值
 
 - **onAwake(time`<Number>`)**
 
@@ -222,8 +226,20 @@ P('index', {
 
 	本地缓存的封装, 方法如下：
 
-	- `set(key, value[, expire][, cb])` 如果传 `cb` 参数，会使用异步模式并回调
+	- `set(key, value[, expire][, cb])` 如果传 `cb` 参数，会使用异步模式并回调，否则直接同步返回结果。
+		* `value` 缓存数据，可以为对象
+		* `expire` 缓存过期时间，单位为秒
 	- `get(key[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
+	```js
+	Page({
+		onLoad: function () {
+			this.$cache.set('page_data', {
+					name: '首页'
+			})
+		}
+	})
+	```
+
 
 - **$session**
 
@@ -231,6 +247,15 @@ P('index', {
 
 	- `set(key, value[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
 	- `get(key[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
+	```js
+	Page({
+		onLoad: function () {
+			this.$session.set('page_session_data', {
+					name: '首页'
+			})
+		}
+	})
+	```
 
 - **$emitter**
 
@@ -293,7 +318,7 @@ P('index', {
 
 	点击代理方法，绑定 `$onRoute` 逻辑，在元素上声明 `data-url` 作为跳转地址，支持切面方法：
 	+ `data-before` 跳转前执行
-	+ `data-after` 	跳转后执行
+	+ `data-after`  跳转后执行
 
 	示例：
 	```html
@@ -347,3 +372,9 @@ P('index', {
 
 	this.$take('play:prefetch') // => null
 	```
+
+## 谁在用
+
+腾讯视频 | 王者荣耀攻略宝典 | 何润锋工作室
+------------ | ------------- | -------------
+<img src="https://i.gtimg.cn/qqlive/images/20170301/wxapp.png" width="120"/> | <img src="https://i.gtimg.cn/qqlive/images/tinyapp_pvp_qrcode/tinyapp_pvp.jpg" width="120"/> | <img src="https://i.gtimg.cn/qqlive/images/tinyapp_qrcodes/qqnews_hrf.jpg" width="120"/>

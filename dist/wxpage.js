@@ -1,6 +1,6 @@
 /*!
- * @tencent/wxpage v0.0.12
- * http://git.code.oa.com/vfe-components/wxpage
+ * wxpage v0.0.13
+ * https://github.com/tvfe/wxpage
  * License MIT
  */
 module.exports =
@@ -493,6 +493,7 @@ function useComponents(option, comps, label, emitter) {
 						case 'onUnload':
 						case 'onPullDownRefresh':
 						case 'onReachBottom':
+						case 'onPageScroll':
 						// extend
 						case 'onNavigate':
 						case 'onPreload':
