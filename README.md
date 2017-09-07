@@ -227,7 +227,7 @@ P('index', {
 
   - `set(key, value[, expire][, cb])` 如果传 `cb` 参数，会使用异步模式并回调，否则直接同步返回结果。
     * `value` 缓存数据，可以为对象
-    * `expire` 缓存过期时间，单位为秒
+    * `expire` 缓存过期时间，单位为毫秒
   - `get(key[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
   ```js
   Page({
