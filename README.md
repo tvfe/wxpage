@@ -172,18 +172,18 @@ P('index', {
 
 	App.onLaunch 触发时调用。
 	opts:
-	- `path`	String	打开小程序的路径
-	- `query`	Object	打开小程序的query
-	- `scene`	Number	打开小程序的场景值
+	- `path`  String  打开小程序的路径
+	- `query` Object  打开小程序的query
+	- `scene` Number  打开小程序的场景值
 
 
 - **onAppLaunch(opts)**
 
 	App.onShow 触发时调用。
 	opts:
-	- `path`	String	打开小程序的路径
-	- `query`	Object	打开小程序的query
-	- `scene`	Number	打开小程序的场景值
+	- `path`  String  打开小程序的路径
+	- `query` Object  打开小程序的query
+	- `scene` Number  打开小程序的场景值
 
 - **onAwake(time`<Number>`)**
 
@@ -318,7 +318,7 @@ P('index', {
 
 	点击代理方法，绑定 `$onRoute` 逻辑，在元素上声明 `data-url` 作为跳转地址，支持切面方法：
 	+ `data-before` 跳转前执行
-	+ `data-after` 	跳转后执行
+	+ `data-after`  跳转后执行
 
 	示例：
 	```html
