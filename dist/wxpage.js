@@ -1,5 +1,5 @@
 /*!
- * wxpage v0.0.14
+ * wxpage v0.0.15
  * https://github.com/tvfe/wxpage
  * License MIT
  */
@@ -375,7 +375,7 @@ var cache = {
 	 * setter
 	 * @param {String} k      key
 	 * @param {Object} v      value
-	 * @param {Number} expire 过期时间，毫秒，为负数的时候表示为唯一session ID
+	 * @param {Number} expire 过期时间，毫秒，为负数的时候表示为唯一session ID，为 true 表示保持上一次缓存时间
 	 * @param {Function} asyncCB optional, 是否异步、异步回调方法
 	 */
 	set: function (k, v, expire, asyncCB) {
@@ -385,15 +385,33 @@ var cache = {
 		} else if (asyncCB && fns.type(asyncCB) != 'function') {
 			asyncCB = noop
 		}
-		expire = expire || 0
-		if (expire > 0) {
-			var t = + new Date()
-			expire = expire + t
-		}
 		var data = {
-			expr: +expire,
+			expr: 0,
 			data: v
 		}
+		var expireTime
+		/**
+		 * 保持上次缓存时间
+		 */
+		if (expire === true) {
+			var _cdata = wx.getStorageSync('_cache_' + k)
+			// 上次没有缓存，本次也不更新
+			if (!_cdata) return
+			// 使用上次过期时间
+			data.expr = _cdata.expr || 0
+			expireTime = 1
+		}
+		if (!expireTime) {
+			expire = expire || 0
+			if (expire > 0) {
+				var t = + new Date()
+				expire = expire + t
+			}
+			data.expr = +expire
+		}
+		/**
+		 * 根据异步方法决定同步、异步更新
+		 */
 		if (asyncCB) {
 			wx.setStorage({
 				key: '_cache_' + k,

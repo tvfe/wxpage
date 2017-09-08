@@ -227,7 +227,7 @@ P('index', {
 
   - `set(key, value[, expire][, cb])` 如果传 `cb` 参数，会使用异步模式并回调，否则直接同步返回结果。
     * `value`   缓存数据，可以为对象
-    * `expire`  缓存过期时间，单位为毫秒
+    * `expire`  缓存过期时间，单位为毫秒。如果为 `true` ，那么保持已存在的缓存时间，如果没有缓存，那么认为过期，不保存。
     * `cb`      可选，异步写的时候回调，接收参数：cb(err), err不为空代表失败。
   - `get(key[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
     * `cb`      可选，异步读的时候回调，接收参数：cb(err, data), err不为空代表失败。
@@ -255,6 +255,16 @@ P('index', {
           console.log('Get data success', data)
         }
       })
+      // 设定缓存时间，例如：1000 毫秒
+      this.$cache.set('page_data', {
+          name: '首页'
+      }, 1000)
+      setTimeout(()=> {
+        // 保持上次缓存时间: 1000-200毫秒
+        this.$cache.set('page_data', {
+            name: '首页'
+        }, true)
+      }, 200)
     }
   })
   ```
