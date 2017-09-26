@@ -178,7 +178,7 @@ P('index', {
   - `scene` Number  打开小程序的场景值
 
 
-- **onAppLaunch(opts)**
+- **onShow(opts)**
 
   App.onShow 触发时调用。
   opts:
