@@ -153,8 +153,11 @@ P({
 var P = require('./wxpage')
 P('index', {
   data: {/*...*/},
-  onLaunch: function () {
-
+  onAppLaunch: function () {
+    // do something
+  },
+  onPageLaunch: function () {
+    // do something
   },
   onLoad: function () {
     // do something
