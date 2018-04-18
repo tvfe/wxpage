@@ -1,5 +1,5 @@
 /*!
- * wxpage v0.0.15
+ * wxpage v0.0.16
  * https://github.com/tvfe/wxpage
  * License MIT
  */
@@ -676,6 +676,7 @@ var isAppLaunched = 0
 var isAppShowed = 0
 var hideTime = 0
 var routeResolve
+var customRouteResolve
 var nameResolve
 var extendPageBefore
 var extendPageAfter
@@ -850,7 +851,7 @@ pageRedirectorDelegate(redirector, ['navigateTo', 'redirectTo', 'switchTab', 're
  */
 function Application (option) {
 
-	if (!option.config || !option.config.route) {
+	if (!option.config || !option.config.route || !option.config.route.length) {
 		throw new Error('config.route is necessary !')
 	}
 	if (option.config) {
@@ -944,7 +945,7 @@ function route ({type}) {
 		var parts = url.split(/\?/)
 		var pagepath = parts[0]
 		if (/^[\w\-]+$/.test(pagepath)) {
-			pagepath = routeResolve(pagepath)
+			pagepath = (customRouteResolve || routeResolve)(pagepath)
 		}
 		if (!pagepath) {
 			throw new Error('Invalid path:', pagepath)
@@ -968,6 +969,7 @@ WXPage.A = WXPage.App = WXPage.Application = Application
 /**
  * Config handler
  */
+
 function _conf(k, v) {
 	switch(k) {
 		case 'extendPageBefore':
@@ -976,16 +978,38 @@ function _conf(k, v) {
 		case 'extendPageAfter':
 			extendPageAfter = v
 			break
+		case 'resolvePath':
+			if (fns.type(v) == 'function') {
+				customRouteResolve = v
+			}
+			break
 		case 'route':
-			if (fns.type(v) == 'string') {
-					var PATH_REG = new RegExp('^'+v.replace(/^\/?/, '/?').replace(/[\.]/g, '\\.').replace('$page', '([\\w\\-]+)'))
+			let t = fns.type(v)
+			if (t == 'string' || t == 'array') {
+					let routes = (t == 'string' ? [v]:v)
+					let mainRoute = routes[0]
+					routes = routes.map(function (item) {
+						return new RegExp('^'+item
+							.replace(/^\/?/, '/?')
+							.replace(/[\.]/g, '\\.')
+							.replace('$page', '([\\w\\-]+)')
+						)
+					})
 					routeResolve = function (name) {
-						return v.replace('$page', name)
+						return mainRoute.replace('$page', name)
 					}
 					nameResolve = function (url) {
-						var m = PATH_REG.exec(url)
-						return m ? m[1] : ''
+						var n = ''
+						routes.some(function (reg) {
+							var m = reg.exec(url)
+							if (m) {
+								n = m[1]
+								return true
+							}
+						})
+						return n
 					}
+
 			} else {
 				console.error('Illegal routes option:', v)
 			}

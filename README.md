@@ -74,7 +74,22 @@ A({
 
 - **route** `必需`
 
-  页面目录的路由地址，`$page`会被替换为页面名
+  页面目录的路由地址，`$page`会被替换为页面名。
+
+> route 支持数组，为多项路由的时候，必须搭配 `resolvePath` 使用，否则默认采用第一项作为路径还原。
+
+
+- **resolvePath(name`<String>`)** `可选`
+
+  ```js
+    config: {
+      route: ['/page/$page', '/pages/$page'],
+      resolvePath: function (name) {
+        return `/page/${name}`
+      }
+    }
+
+  ```
 
 - **extendPageBefore(name, def, modules)** `可选`
 
