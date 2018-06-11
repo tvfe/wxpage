@@ -1,5 +1,5 @@
 /*!
- * wxpage v0.0.16
+ * wxpage v0.0.17
  * https://github.com/tvfe/wxpage
  * License MIT
  */
@@ -337,7 +337,7 @@ Message.prototype.emit = function (evtType) {
 }
 Message.prototype.assign = function (target) {
 	var msg = this;
-	['on', 'off', 'wait', 'emit'].forEach(function (name) {
+	['on', 'off', 'wait', 'emit', 'assign'].forEach(function (name) {
 		var method = msg[name]
 		target[name] = function () {
 			return method.apply(msg, arguments)
@@ -519,6 +519,7 @@ function useComponents(option, comps, label, emitter) {
 						case 'onAwake':
 						case 'onAppLaunch':
 						case 'onAppShow':
+						case 'onPageLaunch':
 							option[k] = fns.wrapFun(option[k], v)
 							return
 						case 'data':
@@ -1026,6 +1027,9 @@ WXPage.config = function (key, value) {
 	}
 	return this
 }
+message.assign(WXPage)
+message.assign(Component)
+message.assign(Application)
 module.exports = WXPage
 
 

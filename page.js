@@ -362,4 +362,7 @@ WXPage.config = function (key, value) {
 	}
 	return this
 }
+message.assign(WXPage)
+message.assign(Component)
+message.assign(Application)
 module.exports = WXPage

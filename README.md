@@ -8,6 +8,7 @@
 ## 目录
 
 * [使用](#使用)
+* [类方法](#类方法)
 * [程序](#程序)
   - [定义](#-a定义)
   - [扩展的生命周期](#-a扩展的生命周期)
@@ -43,6 +44,34 @@ npm install wxpage-cli -g
 
 wxpage init
 ```
+
+
+### 类方法
+
+```js
+var wxpage = require('/path/to/wxpage.js')
+wxpage.A
+wxpage.C
+/* ... */
+```
+
+- **wxpage**(def<`Object`>)
+  页面定义方法
+
+- wxpage.**A**(def<`Object`>)
+  程序定义方法
+
+- wxpage.**C**(def<`Object`>)
+  组件定义方法
+
+- wxpage.**on**(key<`String`>, handler<`Function`>)
+  监听APP与页面间的消息
+
+- wxpage.**emit**(key<`String`>, message<`任意`>)
+  监听APP与页面间的消息
+
+- wxpage.**off**(key<`String`>, handler<`Function`>)
+  取消监听APP与页面间的消息
 
 
 ### 程序

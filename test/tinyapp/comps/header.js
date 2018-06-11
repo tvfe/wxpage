@@ -4,7 +4,7 @@ module.exports = C('header', function (vm) {
 		data: {
 			title: 'header~'
 		},
-		onLaunch: function () {
+		onAppLaunch: function () {
 			vm.$set({
 				title: 'Launch...'
 			})
@@ -14,6 +14,9 @@ module.exports = C('header', function (vm) {
 			setTimeout(function () {
 				vm.$set({'title': '√ Done'})
 			}, 1000)
+			setTimeout(function () {
+				C.emit('some_message', 'I am component/header!')
+			}, 100)
 		},
 		onTap: function (e) {
 			console.log(e)

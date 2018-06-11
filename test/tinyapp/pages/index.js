@@ -3,9 +3,7 @@ var Header = require('../comps/header')
 var d = new Date()
 
 P('index', {
-	comps: [
-		Header,
-	],
+	comps: [ Header ],
 	data: {
 	},
 	onPageLaunch: function () {
@@ -30,6 +28,11 @@ P('index', {
 		console.log('[Step 2] session set "session"')
 		this.$session.set('session', {name: 'wxpage'})
 		console.log('[Step 3] session get', this.$session.get('session'))
+
+
+		setTimeout(function () {
+			P.emit('some_message', 'I am index!')
+		}, 100)
 	},
 	onReady: function () {
 		var context = wx.createContext()
