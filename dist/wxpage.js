@@ -802,7 +802,7 @@ function WXPage(name, option) {
 	 */
 	option.onLoad = fns.wrapFun(option.onLoad, function() {
 		// After onLoad, onAwake is valid if defined
-		option.onAwake && message.on('app:sleep', function(t) {
+		option.onAwake && message.on('app:sleep', (t) => {
 			option.onAwake.call(this, t)
 		})
 		if (!hasPageLoaded) {
@@ -858,16 +858,19 @@ function Application (option) {
 	if (option.config) {
 		WXPage.config(option.config)
 	}
+	var ctx = option
 	/**
 	 * APP sleep logical
 	 */
 	option.onShow = option.onShow ? fns.wrapFun(option.onShow, appShowHandler) : appShowHandler
 	option.onHide = option.onHide ? fns.wrapFun(option.onHide, appHideHandler) : appHideHandler
 	option.onLaunch = option.onLaunch ? fns.wrapFun(option.onLaunch, appLaunchHandler) : appLaunchHandler
-
+	option.onLaunch = fns.wrapFun(option.onLaunch, function () {
+		ctx = this
+	})
 	if (option.onAwake) {
 		message.on('app:sleep', function(t){
-			option.onAwake.call(this, t)
+			option.onAwake.call(ctx, t)
 		})
 	}
 	/**
