@@ -1,5 +1,5 @@
 /*!
- * wxpage v0.0.17
+ * wxpage v0.0.18
  * https://github.com/tvfe/wxpage
  * License MIT
  */
