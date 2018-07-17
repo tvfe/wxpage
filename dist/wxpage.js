@@ -1,5 +1,5 @@
 /*!
- * wxpage v0.0.18
+ * wxpage v0.0.19
  * https://github.com/tvfe/wxpage
  * License MIT
  */
@@ -970,6 +970,11 @@ function getPageName(url) {
 
 WXPage.C = WXPage.Comp = WXPage.Component = Component
 WXPage.A = WXPage.App = WXPage.Application = Application
+WXPage.redirector = redirector
+WXPage.message = message
+WXPage.cache = cache
+WXPage.fns = fns
+
 /**
  * Config handler
  */
