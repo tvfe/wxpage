@@ -282,15 +282,16 @@ var C = __webpack_require__(7)
 var bridge = __webpack_require__(3)
 var _conf = __webpack_require__(4)
 var dispatcher = new message()
-var channel = {}
 var hasPageLoaded = 0
 var isAppLaunched = 0
 var isAppShowed = 0
 var hideTime = 0
 var modules = {
-	fns, redirector, cache, message, dispatcher, channel
+	fns, redirector, cache, message, dispatcher,
+	channel: bridge.channel
 }
 bridge.ref(C.getRef)
+bridge.dispatcher(dispatcher)
 C.dispatcher(dispatcher)
 function WXPage(name, option) {
 	// page internal message
@@ -349,22 +350,6 @@ function WXPage(name, option) {
 	 * 父子通信枢纽模块
 	 */
 	option.$ = bridge.mount
-	/**
-	 * 存一次，取一次
-	 */
-	option.$put = function (key, value) {
-		channel[key] = value
-		return this
-	}
-	/**
-	 * 只能被取一次
-	 */
-	option.$take = function (key) {
-		var v = channel[key]
-		// 释放引用
-		channel[key] = null
-		return v
-	}
 	/**
 	 * setData wrapper, for component setData with prefix
 	 * @param {String} prefix prefix of component's data
@@ -640,7 +625,6 @@ var cache = __webpack_require__(2)
 var redirector = __webpack_require__(6)
 var conf = __webpack_require__(4)
 var fns = __webpack_require__(0)
-
 var navigate = route({type: 'navigateTo'})
 var redirect = route({type: 'redirectTo'})
 var switchTab = route({type: 'switchTab'})
@@ -650,9 +634,15 @@ var bindNavigate = clickDelegate('navigate')
 var bindRedirect = clickDelegate('redirect')
 var bindSwitch = clickDelegate('switchTab')
 var bindReLaunch = clickDelegate('reLaunch')
+var channel = {}
+var dispatcher
 var getRef
 
 module.exports = {
+	channel,
+	dispatcher: function (d) {
+		dispatcher = d
+	},
 	ref: function (fn) {
 		getRef = fn
 	},
@@ -684,10 +674,20 @@ module.exports = {
 			})
 		})
 	},
-	methods: function (ctx, dispatcher) {
-
+	methods: function (ctx) {
+		/**
+		 * 缓存
+		 */
 		ctx.$cache = cache
 		ctx.$session = cache.session
+		/**
+		 * 存一次，取一次
+		 */
+		ctx.$put = put
+		/**
+		 * 只能被取一次
+		 */
+		ctx.$take = take
 		/**
 		 * 实例引用集合
 		 */
@@ -704,7 +704,7 @@ module.exports = {
 		/**
 		 * 页面预加载
 		 */
-		ctx.$preload = preload(dispatcher)
+		ctx.$preload = preload
 		/**
 		 * 点击跳转代理
 		 */
@@ -716,12 +716,7 @@ module.exports = {
 		 * 页面信息
 		 */
 		ctx.$curPage = getPage
-		ctx.$curPageName = function () {
-			var route = getPage().route
-			if (!route) return ''
-			return getPageName(route)
-		}
-
+		ctx.$curPageName = curPageName
 	}
 }
 /**
@@ -769,12 +764,9 @@ function back(delta) {
 		delta: delta || 1
 	})
 }
-
-function preload(dispatcher){
-	return function (url) {
-		var name = getPageName(url)
-		name && dispatcher && dispatcher.emit('preload:'+name, url, fns.queryParse(url.split('?')[1]))
-	}
+function preload(url){
+	var name = getPageName(url)
+	name && dispatcher && dispatcher.emit('preload:'+name, url, fns.queryParse(url.split('?')[1]))
 }
 function getPage() {
 	return getCurrentPages().slice(0).pop()
@@ -782,6 +774,21 @@ function getPage() {
 function getPageName(url) {
 	var m = /^[\w\-]+(?=\?|$)/.exec(url)
 	return m ? m[0] : conf.get('nameResolve')(url)
+}
+function curPageName () {
+	var route = getPage().route
+	if (!route) return ''
+	return getPageName(route)
+}
+function put (key, value) {
+	channel[key] = value
+	return this
+}
+function take (key) {
+	var v = channel[key]
+	// 释放引用
+	channel[key] = null
+	return v
 }
 
 

@@ -8,15 +8,16 @@ var C = require('./lib/component')
 var bridge = require('./lib/bridge')
 var _conf = require('./lib/conf')
 var dispatcher = new message()
-var channel = {}
 var hasPageLoaded = 0
 var isAppLaunched = 0
 var isAppShowed = 0
 var hideTime = 0
 var modules = {
-	fns, redirector, cache, message, dispatcher, channel
+	fns, redirector, cache, message, dispatcher,
+	channel: bridge.channel
 }
 bridge.ref(C.getRef)
+bridge.dispatcher(dispatcher)
 C.dispatcher(dispatcher)
 function WXPage(name, option) {
 	// page internal message
@@ -75,22 +76,6 @@ function WXPage(name, option) {
 	 * 父子通信枢纽模块
 	 */
 	option.$ = bridge.mount
-	/**
-	 * 存一次，取一次
-	 */
-	option.$put = function (key, value) {
-		channel[key] = value
-		return this
-	}
-	/**
-	 * 只能被取一次
-	 */
-	option.$take = function (key) {
-		var v = channel[key]
-		// 释放引用
-		channel[key] = null
-		return v
-	}
 	/**
 	 * setData wrapper, for component setData with prefix
 	 * @param {String} prefix prefix of component's data
