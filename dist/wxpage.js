@@ -69,7 +69,7 @@ module.exports =
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 6);
+/******/ 	return __webpack_require__(__webpack_require__.s = 7);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -269,122 +269,6 @@ module.exports = fns
 
 /***/ }),
 /* 1 */
-/***/ (function(module, exports) {
-
-var getRef
-module.exports = {
-	ref: function (fn) {
-		getRef = fn
-	},
-	mount: function (e) {
-		var payload = e.detail
-		switch(payload.type) {
-			case 'attached':
-				let ref = getRef && getRef(payload.id)
-				if (!ref) return
-
-				let refName = ref.properties._ref || ref.properties.ref
-				if (refName) {
-					this.$refs[refName] = ref
-				}
-				ref._$attached(this)
-				break
-			case 'event:call':
-				let method = this[payload.method]
-				method && method.apply(this, payload.args)
-			default:
-				break
-		}
-	}
-}
-
-
-/***/ }),
-/* 2 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/**
- *  Simple Pub/Sub module
- *  @tencent/message and 减掉fns依赖
- **/
-
-
-function Message() {
-	this._evtObjs = {};
-}
-Message.prototype.on = function (evtType, handler, _once) {
-	if (!this._evtObjs[evtType]) {
-		this._evtObjs[evtType] = [];
-	}
-	this._evtObjs[evtType].push({
-		handler: handler,
-		once: _once
-	})
-	var that = this
-	return function () {
-		that.off(evtType, handler)
-	}
-}
-Message.prototype.off = function (evtType, handler) {
-	var types;
-	if (evtType) {
-		types = [evtType];
-	} else {
-		types = Object.keys(this._evtObjs)
-	}
-	var that = this;
-	types.forEach(function (type) {
-		if (!handler) {
-			// remove all
-			that._evtObjs[type] = [];
-		} else {
-			var handlers = that._evtObjs[type] || [],
-				nextHandlers = [];
-
-			handlers.forEach(function (evtObj) {
-				if (evtObj.handler !== handler) {
-					nextHandlers.push(evtObj)
-				}
-			})
-			that._evtObjs[type] = nextHandlers;
-		}
-	})
-
-	return this;
-}
-Message.prototype.emit = function (evtType) {
-	var args = Array.prototype.slice.call(arguments, 1)
-
-	var handlers = this._evtObjs[evtType] || [];
-	handlers.forEach(function (evtObj) {
-		if (evtObj.once && evtObj.called) return
-		evtObj.called = true
-		try {
-			evtObj.handler && evtObj.handler.apply(null, args);
-		} catch(e) {
-			console.error(e.stack || e.message || e)
-		}
-	})
-}
-Message.prototype.assign = function (target) {
-	var msg = this;
-	['on', 'off', 'wait', 'emit', 'assign'].forEach(function (name) {
-		var method = msg[name]
-		target[name] = function () {
-			return method.apply(msg, arguments)
-		}
-	})
-}
-/**
- *  Global Message Central
- **/
-;(new Message()).assign(Message)
-module.exports = Message;
-
-
-/***/ }),
-/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -510,14 +394,328 @@ module.exports = cache
 
 
 /***/ }),
+/* 2 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var fns = __webpack_require__(0)
+var _conf = {
+	nameResolve: function () {}
+}
+module.exports = {
+	set: function (k, v) {
+		switch(k) {
+			case 'resolvePath':
+				if (fns.type(v) == 'function') {
+					_conf.customRouteResolve = v
+				}
+				break
+			case 'route':
+				let t = fns.type(v)
+				if (t == 'string' || t == 'array') {
+						let routes = (t == 'string' ? [v]:v)
+						let mainRoute = routes[0]
+						routes = routes.map(function (item) {
+							return new RegExp('^'+item
+								.replace(/^\/?/, '/?')
+								.replace(/[\.]/g, '\\.')
+								.replace('$page', '([\\w\\-]+)')
+							)
+						})
+						_conf.routeResolve = function (name) {
+							return mainRoute.replace('$page', name)
+						}
+						_conf.nameResolve = function (url) {
+							var n = ''
+							routes.some(function (reg) {
+								var m = reg.exec(url)
+								if (m) {
+									n = m[1]
+									return true
+								}
+							})
+							return n
+						}
+
+				} else {
+					console.error('Illegal routes option:', v)
+				}
+				break
+			default:
+				_conf[k] = v
+		}
+	},
+	get: function (k) {
+		return _conf[k]
+	}
+}
+
+
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var cache = __webpack_require__(1)
+var redirector = __webpack_require__(5)
+var conf = __webpack_require__(2)
+
+var navigate = route({type: 'navigateTo'})
+var redirect = route({type: 'redirectTo'})
+var switchTab = route({type: 'switchTab'})
+var reLaunch = route({type: 'reLaunch'})
+var routeMethods = {navigate, redirect, switchTab, reLaunch}
+var bindNavigate = clickDelegate('navigate')
+var bindRedirect = clickDelegate('redirect')
+var bindSwitch = clickDelegate('switchTab')
+var bindReLaunch = clickDelegate('reLaunch')
+var getRef
+
+module.exports = {
+	ref: function (fn) {
+		getRef = fn
+	},
+	mount: function (e) {
+		var payload = e.detail
+		switch(payload.type) {
+			case 'attached':
+				let ref = getRef && getRef(payload.id)
+				if (!ref) return
+
+				let refName = ref.properties._ref || ref.properties.ref
+				if (refName) {
+					this.$refs[refName] = ref
+				}
+				ref._$attached(this)
+				break
+			case 'event:call':
+				let method = this[payload.method]
+				method && method.apply(this, payload.args)
+			default:
+				break
+		}
+	},
+	methods: function (ctx) {
+		ctx.$cache = cache
+		ctx.$session = cache.session
+		/**
+		 * 实例引用集合
+		 */
+		ctx.$refs = {}
+
+		/**
+		 * 路由方法
+		 */
+		ctx.$route = ctx.$navigate = navigate
+		ctx.$redirect = redirect
+		ctx.$switch = switchTab
+		ctx.$launch = reLaunch
+		ctx.$back = back
+
+		/**
+		 * Click delegate methods
+		 */
+		ctx.$bindRoute = ctx.$bindNavigate = bindNavigate
+		ctx.$bindRedirect = bindRedirect
+		ctx.$bindSwitch = bindSwitch
+		ctx.$bindReLaunch = bindReLaunch
+	}
+}
+/**
+ * Navigate handler
+ */
+function route ({type}) {
+	// url: $page[?name=value]
+	return function (url, config) {
+		var parts = url.split(/\?/)
+		var pagepath = parts[0]
+		if (/^[\w\-]+$/.test(pagepath)) {
+			pagepath = (conf.get('customRouteResolve') || conf.get('routeResolve'))(pagepath)
+		}
+		if (!pagepath) {
+			throw new Error('Invalid path:', pagepath)
+		}
+		config = config || {}
+		// append querystring
+		config.url = pagepath + (parts[1] ? '?' + parts[1] : '')
+		redirector[type](config)
+	}
+}
+
+function clickDelegate(type) {
+	var _route = routeMethods[type]
+	return function (e) {
+		if (!e) return
+		var dataset = e.currentTarget.dataset
+		var before = dataset.before
+		var after = dataset.after
+		var url = dataset.url
+		var ctx = this
+		try {
+			if (ctx && before && ctx[before]) ctx[before].call(ctx, e)
+		} finally {
+			if (!url) return
+			_route(url)
+			if (ctx && after && ctx[after]) ctx[after].call(ctx, e)
+		}
+	}
+}
+
+
+function back(delta) {
+	wx.navigateBack({
+		delta: delta || 1
+	})
+}
+
+
+/***/ }),
 /* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ *  Simple Pub/Sub module
+ *  @tencent/message and 减掉fns依赖
+ **/
+
+
+function Message() {
+	this._evtObjs = {};
+}
+Message.prototype.on = function (evtType, handler, _once) {
+	if (!this._evtObjs[evtType]) {
+		this._evtObjs[evtType] = [];
+	}
+	this._evtObjs[evtType].push({
+		handler: handler,
+		once: _once
+	})
+	var that = this
+	return function () {
+		that.off(evtType, handler)
+	}
+}
+Message.prototype.off = function (evtType, handler) {
+	var types;
+	if (evtType) {
+		types = [evtType];
+	} else {
+		types = Object.keys(this._evtObjs)
+	}
+	var that = this;
+	types.forEach(function (type) {
+		if (!handler) {
+			// remove all
+			that._evtObjs[type] = [];
+		} else {
+			var handlers = that._evtObjs[type] || [],
+				nextHandlers = [];
+
+			handlers.forEach(function (evtObj) {
+				if (evtObj.handler !== handler) {
+					nextHandlers.push(evtObj)
+				}
+			})
+			that._evtObjs[type] = nextHandlers;
+		}
+	})
+
+	return this;
+}
+Message.prototype.emit = function (evtType) {
+	var args = Array.prototype.slice.call(arguments, 1)
+
+	var handlers = this._evtObjs[evtType] || [];
+	handlers.forEach(function (evtObj) {
+		if (evtObj.once && evtObj.called) return
+		evtObj.called = true
+		try {
+			evtObj.handler && evtObj.handler.apply(null, args);
+		} catch(e) {
+			console.error(e.stack || e.message || e)
+		}
+	})
+}
+Message.prototype.assign = function (target) {
+	var msg = this;
+	['on', 'off', 'wait', 'emit', 'assign'].forEach(function (name) {
+		var method = msg[name]
+		target[name] = function () {
+			return method.apply(msg, arguments)
+		}
+	})
+}
+/**
+ *  Global Message Central
+ **/
+;(new Message()).assign(Message)
+module.exports = Message;
+
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+ * 对wx.navigateTo、wx.redirectTo、wx.navigateBack的包装，在它们的基础上添加了事件
+ */
+var Message = __webpack_require__(4)
+var exportee = module.exports = new Message()
+var timer, readyTimer, pending
+
+exportee.on('page:ready', function () {
+	readyTimer = setTimeout(function () {
+		pending = false
+	}, 100)
+})
+function route(type, cfg, args) {
+	if (pending) return
+	pending = true
+	clearTimeout(timer)
+	clearTimeout(readyTimer)
+	/**
+	 * 2s内避免重复的跳转
+	 */
+	timer = setTimeout(function () {
+		pending = false
+	}, 2000)
+	exportee.emit('navigateTo', cfg.url)
+
+	// 会存在不兼容接口，例如：reLaunch
+	if (wx[type]) {
+		return wx[type].apply(wx, args)
+	}
+}
+exportee.navigateTo = function (cfg) {
+	return route('navigateTo', cfg, arguments)
+}
+exportee.redirectTo = function (cfg) {
+	return route('redirectTo', cfg, arguments)
+}
+exportee.switchTab = function (cfg) {
+	return route('switchTab', cfg, arguments)
+}
+exportee.reLaunch = function (cfg) {
+	return route('reLaunch', cfg, arguments)
+}
+exportee.navigateBack = function () {
+  return wx.navigateBack.apply(wx, arguments)
+}
+
+
+/***/ }),
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 var fns = __webpack_require__(0)
-var bridge = __webpack_require__(1)
+var bridge = __webpack_require__(3)
+var cache = __webpack_require__(1)
+var conf = __webpack_require__(2)
 var dispatcher
 /**
  * Component constructor
@@ -529,8 +727,12 @@ function component(def) {
 		console.error(`Illegal component options [${name || 'Anonymous'}]`)
 		def = {}
 	}
+	// extend page config
+	var extendComponentBefore = conf.get('extendComponentBefore')
+	extendComponentBefore && extendComponentBefore(def)
+
 	def.created = fns.wrapFun(def.created, function () {
-		this.$refs = {}
+		bridge.methods(this)
 	})
 	def.attached = fns.wrapFun(def.attached, function () {
 		var id = ++cid
@@ -605,82 +807,25 @@ module.exports = component
 
 
 /***/ }),
-/* 5 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-/**
- * 对wx.navigateTo、wx.redirectTo、wx.navigateBack的包装，在它们的基础上添加了事件
- */
-var Message = __webpack_require__(2)
-var exportee = module.exports = new Message()
-var timer, readyTimer, pending
-
-exportee.on('page:ready', function () {
-	readyTimer = setTimeout(function () {
-		pending = false
-	}, 100)
-})
-function route(type, cfg, args) {
-	if (pending) return
-	pending = true
-	clearTimeout(timer)
-	clearTimeout(readyTimer)
-	/**
-	 * 2s内避免重复的跳转
-	 */
-	timer = setTimeout(function () {
-		pending = false
-	}, 2000)
-	exportee.emit('navigateTo', cfg.url)
-
-	// 会存在不兼容接口，例如：reLaunch
-	if (wx[type]) {
-		return wx[type].apply(wx, args)
-	}
-}
-exportee.navigateTo = function (cfg) {
-	return route('navigateTo', cfg, arguments)
-}
-exportee.redirectTo = function (cfg) {
-	return route('redirectTo', cfg, arguments)
-}
-exportee.switchTab = function (cfg) {
-	return route('switchTab', cfg, arguments)
-}
-exportee.reLaunch = function (cfg) {
-	return route('reLaunch', cfg, arguments)
-}
-exportee.navigateBack = function () {
-  return wx.navigateBack.apply(wx, arguments)
-}
-
-
-/***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 var fns = __webpack_require__(0)
-var message = __webpack_require__(2)
+var message = __webpack_require__(4)
 var redirector = __webpack_require__(5)
-var cache = __webpack_require__(3)
-var C = __webpack_require__(4)
-var bridge = __webpack_require__(1)
+var cache = __webpack_require__(1)
+var C = __webpack_require__(6)
+var bridge = __webpack_require__(3)
+var _conf = __webpack_require__(2)
 var dispatcher = new message()
 var channel = {}
 var hasPageLoaded = 0
 var isAppLaunched = 0
 var isAppShowed = 0
 var hideTime = 0
-var routeResolve
-var customRouteResolve
-var nameResolve
-var extendPageBefore
-var extendPageAfter
 var modules = {
 	fns, redirector, cache, message, dispatcher, channel
 }
@@ -691,6 +836,7 @@ function WXPage(name, option) {
 	var emitter = new message()
 
 	// extend page config
+	var extendPageBefore = _conf.get('extendPageBefore')
 	extendPageBefore && extendPageBefore(name, option, modules)
 
 	// mixin component defs
@@ -721,35 +867,14 @@ function WXPage(name, option) {
 	/**
 	 * Instance props
 	 */
-	option.$name = name
-	option.$cache = cache
-	option.$session = cache.session
-	option.$emitter = emitter
 	option.$state = {
 		// 是否小程序被打开首页启动页面
 		firstOpen: false
 	}
-	/**
-	 * 实例引用集合
-	 */
-	option.$refs = {}
+	option.$emitter = emitter
+	bridge.methods(option)
 
-	/**
-	 * Instance method hook
-	 */
-	option.$route = option.$navigate = navigate
-	option.$redirect = redirect
-	option.$switch = switchTab
-	option.$launch = reLaunch
-	option.$back = back
 
-	/**
-	 * Click delegate methods
-	 */
-	option.$bindRoute = option.$bindNavigate = bindNavigate
-	option.$bindRedirect = bindRedirect
-	option.$bindSwitch = bindSwitch
-	option.$bindReLaunch = bindReLaunch
 
 	/**
 	 * Cross pages message methods
@@ -842,6 +967,7 @@ function WXPage(name, option) {
 	}
 
 	// extend page config
+	var extendPageAfter = _conf.get('extendPageAfter')
 	extendPageAfter && extendPageAfter(name, option, modules)
 	// register page
 	Page(option)
@@ -910,72 +1036,16 @@ function appHideHandler() {
 	hideTime = new Date()
 }
 
-/**
- * Redirect functions
- */
-var navigate = route({type: 'navigateTo'})
-var redirect = route({type: 'redirectTo'})
-var switchTab = route({type: 'switchTab'})
-var reLaunch = route({type: 'reLaunch'})
-var routeMethods = {navigate, redirect, switchTab, reLaunch}
-var bindNavigate = clickDelegate('navigate')
-var bindRedirect = clickDelegate('redirect')
-var bindSwitch = clickDelegate('switchTab')
-var bindReLaunch = clickDelegate('reLaunch')
-
-function clickDelegate(type) {
-	var _route = routeMethods[type]
-	return function (e) {
-		if (!e) return
-		var dataset = e.currentTarget.dataset
-		var before = dataset.before
-		var after = dataset.after
-		var url = dataset.url
-		var ctx = this
-		try {
-			if (ctx && before && ctx[before]) ctx[before].call(ctx, e)
-		} finally {
-			if (!url) return
-			_route(url)
-			if (ctx && after && ctx[after]) ctx[after].call(ctx, e)
-		}
-	}
-}
-function back(delta) {
-	wx.navigateBack({
-		delta: delta || 1
-	})
-}
 function preload(url){
 	var name = getPageName(url)
 	name && dispatcher.emit('preload:'+name, url, fns.queryParse(url.split('?')[1]))
-}
-/**
- * Navigate handler
- */
-function route ({type}) {
-	// url: $page[?name=value]
-	return function (url, config) {
-		var parts = url.split(/\?/)
-		var pagepath = parts[0]
-		if (/^[\w\-]+$/.test(pagepath)) {
-			pagepath = (customRouteResolve || routeResolve)(pagepath)
-		}
-		if (!pagepath) {
-			throw new Error('Invalid path:', pagepath)
-		}
-		config = config || {}
-		// append querystring
-		config.url = pagepath + (parts[1] ? '?' + parts[1] : '')
-		redirector[type](config)
-	}
 }
 function getPage() {
 	return getCurrentPages().slice(0).pop()
 }
 function getPageName(url) {
 	var m = /^[\w\-]+(?=\?|$)/.exec(url)
-	return m ? m[0] : nameResolve(url)
+	return m ? m[0] : _conf.get('nameResolve')(url)
 }
 
 WXPage.C = WXPage.Comp = WXPage.Component = C
@@ -989,59 +1059,13 @@ WXPage.fns = fns
  * Config handler
  */
 
-function _conf(k, v) {
-	switch(k) {
-		case 'extendPageBefore':
-			extendPageBefore = v
-			break
-		case 'extendPageAfter':
-			extendPageAfter = v
-			break
-		case 'resolvePath':
-			if (fns.type(v) == 'function') {
-				customRouteResolve = v
-			}
-			break
-		case 'route':
-			let t = fns.type(v)
-			if (t == 'string' || t == 'array') {
-					let routes = (t == 'string' ? [v]:v)
-					let mainRoute = routes[0]
-					routes = routes.map(function (item) {
-						return new RegExp('^'+item
-							.replace(/^\/?/, '/?')
-							.replace(/[\.]/g, '\\.')
-							.replace('$page', '([\\w\\-]+)')
-						)
-					})
-					routeResolve = function (name) {
-						return mainRoute.replace('$page', name)
-					}
-					nameResolve = function (url) {
-						var n = ''
-						routes.some(function (reg) {
-							var m = reg.exec(url)
-							if (m) {
-								n = m[1]
-								return true
-							}
-						})
-						return n
-					}
-
-			} else {
-				console.error('Illegal routes option:', v)
-			}
-			break
-	}
-}
 WXPage.config = function (key, value) {
 	if (fns.type(key) == 'object') {
 		fns.objEach(key, function (k, v) {
-			_conf(k, v)
+			_conf.set(k, v)
 		})
 	} else {
-		_conf(key, value)
+		_conf.set(key, value)
 	}
 	return this
 }
