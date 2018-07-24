@@ -1,6 +1,6 @@
 {
   "name": "wxpage",
-  "version": "1.0.20",
+  "version": "1.1.0",
   "description": "WXPage is a lightweight framework for weixin tinyapp.",
   "main": "page.js",
   "scripts": {
