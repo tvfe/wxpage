@@ -1,5 +1,5 @@
 /*!
- * wxpage v0.0.17
+ * wxpage v1.0.19
  * https://github.com/tvfe/wxpage
  * License MIT
  */
@@ -69,7 +69,7 @@ module.exports =
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 6);
+/******/ 	return __webpack_require__(__webpack_require__.s = 7);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -80,10 +80,11 @@ module.exports =
 
 
 var fns = __webpack_require__(1)
-var message = __webpack_require__(2)
-var redirector = __webpack_require__(5)
-var cache = __webpack_require__(3)
-var Component = __webpack_require__(4)
+var message = __webpack_require__(3)
+var redirector = __webpack_require__(6)
+var cache = __webpack_require__(4)
+var C = __webpack_require__(5)
+var bridge = __webpack_require__(2)
 var dispatcher = new message()
 var channel = {}
 var hasPageLoaded = 0
@@ -98,6 +99,8 @@ var extendPageAfter
 var modules = {
 	fns, redirector, cache, message, dispatcher, channel
 }
+bridge.ref(C.getRef)
+C.dispatcher(dispatcher)
 function WXPage(name, option) {
 	// page internal message
 	var emitter = new message()
@@ -106,7 +109,7 @@ function WXPage(name, option) {
 	extendPageBefore && extendPageBefore(name, option, modules)
 
 	// mixin component defs
-	Component.use(option, option.comps, `Page[${name}]`, emitter)
+	// C.use(option, option.comps, `Page[${name}]`, emitter)
 	if (option.onNavigate){
 		let onNavigateHandler = function (url, query) {
 			option.onNavigate({url, query})
@@ -141,6 +144,10 @@ function WXPage(name, option) {
 		// 是否小程序被打开首页启动页面
 		firstOpen: false
 	}
+	/**
+	 * 实例引用集合
+	 */
+	option.$refs = {}
 
 	/**
 	 * Instance method hook
@@ -171,6 +178,10 @@ function WXPage(name, option) {
 	option.$off = function () {
 		return dispatcher.off.apply(dispatcher, arguments)
 	}
+	/**
+	 * 父子通信枢纽模块
+	 */
+	option.$ = bridge.mount
 	/**
 	 * 存一次，取一次
 	 */
@@ -382,7 +393,7 @@ function getPageName(url) {
 	return m ? m[0] : nameResolve(url)
 }
 
-WXPage.C = WXPage.Comp = WXPage.Component = Component
+WXPage.C = WXPage.Comp = WXPage.Component = C
 WXPage.A = WXPage.App = WXPage.Application = Application
 WXPage.redirector = redirector
 WXPage.message = message
@@ -450,7 +461,7 @@ WXPage.config = function (key, value) {
 	return this
 }
 message.assign(WXPage)
-message.assign(Component)
+message.assign(C)
 message.assign(Application)
 module.exports = WXPage
 
@@ -652,6 +663,38 @@ module.exports = fns
 
 /***/ }),
 /* 2 */
+/***/ (function(module, exports) {
+
+var getRef
+module.exports = {
+	ref: function (fn) {
+		getRef = fn
+	},
+	mount: function (e) {
+		var payload = e.detail
+		switch(payload.type) {
+			case 'attached':
+				let ref = getRef && getRef(payload.id)
+				if (!ref) return
+
+				let refName = ref.properties._ref || ref.properties.ref
+				if (refName) {
+					this.$refs[refName] = ref
+				}
+				ref._$attached(this)
+				break
+			case 'event:call':
+				let method = this[payload.method]
+				method && method.apply(this, payload.args)
+			default:
+				break
+		}
+	}
+}
+
+
+/***/ }),
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -735,7 +778,7 @@ module.exports = Message;
 
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -861,135 +904,102 @@ module.exports = cache
 
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 var fns = __webpack_require__(1)
-/**
- * Component instance
- */
-function useComponents(option, comps, label, emitter) {
-	// mixin component defs
-	if (comps) {
-		comps.forEach(function (def) {
-			if (typeof def == 'function') {
-				def = def()
-			}
-			fns.objEach(def, function(k, v) {
-				if (option.hasOwnProperty(k)) {
-					switch(k) {
-						case 'id':
-							// skip
-							return
-						case 'comps':
-							useComponents(option, v, label, emitter)
-							return
-						case 'onLoad':
-						case 'onReady':
-						case 'onShow':
-						case 'onHide':
-						case 'onUnload':
-						case 'onPullDownRefresh':
-						case 'onReachBottom':
-						case 'onPageScroll':
-						// extend
-						case 'onNavigate':
-						case 'onPreload':
-						case 'onLaunch':
-						case 'onAwake':
-						case 'onAppLaunch':
-						case 'onAppShow':
-						case 'onPageLaunch':
-							option[k] = fns.wrapFun(option[k], v)
-							return
-						case 'data':
-							option[k] = fns.extend({}, option.data, v)
-							return
-						default:
-							console.warn(`Property ${k} is already defined by ${label}`);
-					}
-				}
-				// assign to page option
-				option[k] = v
-			})
-
-			def.__$instance && def.__$instance(emitter)
-		})
-	}
-}
+var bridge = __webpack_require__(2)
+var dispatcher
 /**
  * Component constructor
  */
-function component(name, ctor/*[ ctor ]*/) {
-	var ct = fns.type(name)
-	if ((ct == 'function' || ct == 'object') && arguments.length == 1) {
-		ctor = name
-		name = ''
+var refs = {}
+var cid = 0
+function component(def) {
+	if (!def) {
+		console.error(`Illegal component options [${name || 'Anonymous'}]`)
+		def = {}
 	}
-	return function (cid) {
-		var ctx
-		var emitter
-		var dat = {}
-		var vm = {
-			$set: function (data) {
-				if (!cid || !ctx) return
-				ctx.$setData(cid, data)
-			},
-			$data: function () {
-				if (!ctx) return dat
-				else if (cid) return ctx.data[cid]
-			},
-			$on: function(type, handler) {
-				if (!emitter) return noop
-				return emitter.on(type, handler)
-			},
-			$emit: function () {
-				if (!emitter) return
-				emitter.emit.apply(emitter, arguments)
-			}
-		}
-		var def = fns.type(ctor) == 'function'
-			? ctor.call(this, vm)
-			: fns.extend({}, ctor)
-
-		def.onLoad = fns.wrapFun(def.onLoad, function () {
-			ctx = this
+	def.created = fns.wrapFun(def.created, function () {
+		this.$refs = {}
+	})
+	def.attached = fns.wrapFun(def.attached, function () {
+		var id = ++cid
+		this.$id = id
+		refs[id] = this
+		this.triggerEvent('ing', {
+			id: this.$id,
+			type: 'attached'
 		})
-
-		if (!def) {
-			console.error(`Illegal component options [${name || 'Anonymous'}]`)
-			def = {}
+	})
+	def.detached = fns.wrapFun(def.detached, function () {
+		delete refs[this.$id]
+		var $refs = this.$parent && this.$parent.$refs
+		var refName = this.properties.ref || this.properties._ref
+		if (refName) {
+			delete $refs[refName]
 		}
-		useComponents(def, def.comps, `Component[${name || 'Anonymous'}]`, emitter)
-
-		cid = cid || def.id || name
-		if (!cid) {
-			console.error(`Missing "id" property, it is necessary for component: `, def)
-		}
-		delete def.comps
-		delete def.id
-		if (cid && def.data) {
-			var data = {}
-			dat = data[cid] = def.data
-			data[cid].$id = cid
-			def.data = data
-		}
-		def.__$instance = function (et) {
-			emitter = et
-		}
-		return def
-	}
+		this.$parent = null
+	})
+	def.properties = fns.extend({}, def.properties, {
+    'ref': String
+	})
+	def.methods = fns.extend({}, def.methods, {
+		// 与旧的一致
+		$set: function () {
+			return this.setData.apply(this, arguments)
+		},
+		$data: function () {
+			return this.data
+		},
+		$emit: function () {
+			if (!dispatcher) return
+			return dispatcher.emit.apply(dispatcher, arguments)
+		},
+		$on: function () {
+			if (!dispatcher) return function () {}
+			return dispatcher.on.apply(dispatcher, arguments)
+		},
+		$off: function () {
+			if (!dispatcher) return
+			return dispatcher.off.apply(dispatcher, arguments)
+		},
+		$call: function (method) {
+			var args = [].slice.call(arguments, 1)
+			this.triggerEvent('ing', {
+				id: this.$id,
+				type: 'event:call',
+				method,
+				args
+			})
+		},
+		/**
+		 * 由父组件调用
+		 */
+		_$attached: function (parent) {
+			this.$root = parent.$root || parent
+			this.$parent = parent
+		},
+		$: bridge.mount
+	})
+	Component(def)
 }
-function noop() {}
-component.use = useComponents
+component.getRef = function (id) {
+	return refs[id]
+}
+bridge.ref(component.getRef)
+component.dispatcher = function (d) {
+	dispatcher = d
+}
+Component.C = component
 module.exports = component
 
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -997,7 +1007,7 @@ module.exports = component
 /**
  * 对wx.navigateTo、wx.redirectTo、wx.navigateBack的包装，在它们的基础上添加了事件
  */
-var Message = __webpack_require__(2)
+var Message = __webpack_require__(3)
 var exportee = module.exports = new Message()
 var timer, readyTimer, pending
 
@@ -1042,7 +1052,7 @@ exportee.navigateBack = function () {
 
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 __webpack_require__(0);

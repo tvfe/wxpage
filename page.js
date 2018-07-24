@@ -4,7 +4,8 @@ var fns = require('./lib/fns.js')
 var message = require('./lib/message')
 var redirector = require('./lib/redirector')
 var cache = require('./lib/cache')
-var Component = require('./lib/component.js')
+var C = require('./lib/component.js')
+var bridge = require('./lib/bridge.js')
 var dispatcher = new message()
 var channel = {}
 var hasPageLoaded = 0
@@ -19,6 +20,8 @@ var extendPageAfter
 var modules = {
 	fns, redirector, cache, message, dispatcher, channel
 }
+bridge.ref(C.getRef)
+C.dispatcher(dispatcher)
 function WXPage(name, option) {
 	// page internal message
 	var emitter = new message()
@@ -27,7 +30,7 @@ function WXPage(name, option) {
 	extendPageBefore && extendPageBefore(name, option, modules)
 
 	// mixin component defs
-	Component.use(option, option.comps, `Page[${name}]`, emitter)
+	// C.use(option, option.comps, `Page[${name}]`, emitter)
 	if (option.onNavigate){
 		let onNavigateHandler = function (url, query) {
 			option.onNavigate({url, query})
@@ -62,6 +65,10 @@ function WXPage(name, option) {
 		// 是否小程序被打开首页启动页面
 		firstOpen: false
 	}
+	/**
+	 * 实例引用集合
+	 */
+	option.$refs = {}
 
 	/**
 	 * Instance method hook
@@ -92,6 +99,10 @@ function WXPage(name, option) {
 	option.$off = function () {
 		return dispatcher.off.apply(dispatcher, arguments)
 	}
+	/**
+	 * 父子通信枢纽模块
+	 */
+	option.$ = bridge.mount
 	/**
 	 * 存一次，取一次
 	 */
@@ -303,7 +314,7 @@ function getPageName(url) {
 	return m ? m[0] : nameResolve(url)
 }
 
-WXPage.C = WXPage.Comp = WXPage.Component = Component
+WXPage.C = WXPage.Comp = WXPage.Component = C
 WXPage.A = WXPage.App = WXPage.Application = Application
 WXPage.redirector = redirector
 WXPage.message = message
@@ -371,6 +382,6 @@ WXPage.config = function (key, value) {
 	return this
 }
 message.assign(WXPage)
-message.assign(Component)
+message.assign(C)
 message.assign(Application)
 module.exports = WXPage

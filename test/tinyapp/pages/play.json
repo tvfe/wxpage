@@ -1,0 +1,6 @@
+{
+	"usingComponents": {
+    "header": "/comps/header/header",
+    "nav": "/comps/nav/nav"
+  }
+}
