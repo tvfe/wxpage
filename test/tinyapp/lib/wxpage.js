@@ -1,5 +1,5 @@
 /*!
- * wxpage v1.0.19
+ * wxpage v0.0.19
  * https://github.com/tvfe/wxpage
  * License MIT
  */
@@ -69,7 +69,7 @@ module.exports =
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 7);
+/******/ 	return __webpack_require__(__webpack_require__.s = 6);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -80,10 +80,10 @@ module.exports =
 
 
 var fns = __webpack_require__(1)
-var message = __webpack_require__(3)
-var redirector = __webpack_require__(6)
-var cache = __webpack_require__(4)
-var Component = __webpack_require__(5)
+var message = __webpack_require__(2)
+var redirector = __webpack_require__(5)
+var cache = __webpack_require__(3)
+var Component = __webpack_require__(4)
 var dispatcher = new message()
 var channel = {}
 var hasPageLoaded = 0
@@ -651,8 +651,7 @@ module.exports = fns
 
 
 /***/ }),
-/* 2 */,
-/* 3 */
+/* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -736,7 +735,7 @@ module.exports = Message;
 
 
 /***/ }),
-/* 4 */
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -862,7 +861,7 @@ module.exports = cache
 
 
 /***/ }),
-/* 5 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -990,7 +989,7 @@ module.exports = component
 
 
 /***/ }),
-/* 6 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -998,7 +997,7 @@ module.exports = component
 /**
  * 对wx.navigateTo、wx.redirectTo、wx.navigateBack的包装，在它们的基础上添加了事件
  */
-var Message = __webpack_require__(3)
+var Message = __webpack_require__(2)
 var exportee = module.exports = new Message()
 var timer, readyTimer, pending
 
@@ -1043,7 +1042,7 @@ exportee.navigateBack = function () {
 
 
 /***/ }),
-/* 7 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 __webpack_require__(0);
