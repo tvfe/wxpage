@@ -322,10 +322,6 @@ function WXPage(name, option) {
 		})
 	}
 	/**
-	 * Preload another page in current page
-	 */
-	option.$preload = preload
-	/**
 	 * Instance props
 	 */
 	option.$state = {
@@ -385,14 +381,6 @@ function WXPage(name, option) {
 			return this.setData(prefix)
 		}
 	}
-	option.$curPage = function () {
-		return getPage()
-	}
-	option.$curPageName = function () {
-		var route = getPage().route
-		if (!route) return ''
-		return getPageName(route)
-	}
 	/**
 	 * AOP life-cycle methods hook
 	 */
@@ -434,16 +422,10 @@ function WXPage(name, option) {
 	Page(option)
 	return option;
 }
-function pageRedirectorDelegate(emitter, keys) {
-	keys.forEach(function (k) {
-		emitter.on(k, function (url) {
-			var name = getPageName(url)
-			name && dispatcher.emit(k+':'+name, url, fns.queryParse(url.split('?')[1]))
-		})
-	})
-}
-pageRedirectorDelegate(redirector, ['navigateTo', 'redirectTo', 'switchTab', 'reLaunch'])
-
+/**
+ * 由重定向模块转发到页面内派发器
+ */
+bridge.redirectDelegate(redirector, dispatcher)
 /**
  * Application wrapper
  */
@@ -495,18 +477,6 @@ function appShowHandler () {
 }
 function appHideHandler() {
 	hideTime = new Date()
-}
-
-function preload(url){
-	var name = getPageName(url)
-	name && dispatcher.emit('preload:'+name, url, fns.queryParse(url.split('?')[1]))
-}
-function getPage() {
-	return getCurrentPages().slice(0).pop()
-}
-function getPageName(url) {
-	var m = /^[\w\-]+(?=\?|$)/.exec(url)
-	return m ? m[0] : _conf.get('nameResolve')(url)
 }
 
 WXPage.C = WXPage.Comp = WXPage.Component = C
@@ -669,6 +639,7 @@ module.exports = cache
 var cache = __webpack_require__(2)
 var redirector = __webpack_require__(6)
 var conf = __webpack_require__(4)
+var fns = __webpack_require__(0)
 
 var navigate = route({type: 'navigateTo'})
 var redirect = route({type: 'redirectTo'})
@@ -705,7 +676,16 @@ module.exports = {
 				break
 		}
 	},
-	methods: function (ctx) {
+	redirectDelegate: function (emitter, dispatcher) {
+		;['navigateTo', 'redirectTo', 'switchTab', 'reLaunch'].forEach(function (k) {
+			emitter.on(k, function (url) {
+				var name = getPageName(url)
+				name && dispatcher.emit(k+':'+name, url, fns.queryParse(url.split('?')[1]))
+			})
+		})
+	},
+	methods: function (ctx, dispatcher) {
+
 		ctx.$cache = cache
 		ctx.$session = cache.session
 		/**
@@ -721,14 +701,27 @@ module.exports = {
 		ctx.$switch = switchTab
 		ctx.$launch = reLaunch
 		ctx.$back = back
-
 		/**
-		 * Click delegate methods
+		 * 页面预加载
+		 */
+		ctx.$preload = preload(dispatcher)
+		/**
+		 * 点击跳转代理
 		 */
 		ctx.$bindRoute = ctx.$bindNavigate = bindNavigate
 		ctx.$bindRedirect = bindRedirect
 		ctx.$bindSwitch = bindSwitch
 		ctx.$bindReLaunch = bindReLaunch
+		/**
+		 * 页面信息
+		 */
+		ctx.$curPage = getPage
+		ctx.$curPageName = function () {
+			var route = getPage().route
+			if (!route) return ''
+			return getPageName(route)
+		}
+
 	}
 }
 /**
@@ -771,11 +764,24 @@ function clickDelegate(type) {
 	}
 }
 
-
 function back(delta) {
 	wx.navigateBack({
 		delta: delta || 1
 	})
+}
+
+function preload(dispatcher){
+	return function (url) {
+		var name = getPageName(url)
+		name && dispatcher && dispatcher.emit('preload:'+name, url, fns.queryParse(url.split('?')[1]))
+	}
+}
+function getPage() {
+	return getCurrentPages().slice(0).pop()
+}
+function getPageName(url) {
+	var m = /^[\w\-]+(?=\?|$)/.exec(url)
+	return m ? m[0] : conf.get('nameResolve')(url)
 }
 
 
@@ -1001,7 +1007,7 @@ function component(def) {
 	extendComponentBefore && extendComponentBefore(def)
 
 	def.created = fns.wrapFun(def.created, function () {
-		bridge.methods(this)
+		bridge.methods(this, dispatcher)
 	})
 	def.attached = fns.wrapFun(def.attached, function () {
 		var id = ++cid

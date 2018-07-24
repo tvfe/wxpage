@@ -48,10 +48,6 @@ function WXPage(name, option) {
 		})
 	}
 	/**
-	 * Preload another page in current page
-	 */
-	option.$preload = preload
-	/**
 	 * Instance props
 	 */
 	option.$state = {
@@ -111,14 +107,6 @@ function WXPage(name, option) {
 			return this.setData(prefix)
 		}
 	}
-	option.$curPage = function () {
-		return getPage()
-	}
-	option.$curPageName = function () {
-		var route = getPage().route
-		if (!route) return ''
-		return getPageName(route)
-	}
 	/**
 	 * AOP life-cycle methods hook
 	 */
@@ -160,16 +148,10 @@ function WXPage(name, option) {
 	Page(option)
 	return option;
 }
-function pageRedirectorDelegate(emitter, keys) {
-	keys.forEach(function (k) {
-		emitter.on(k, function (url) {
-			var name = getPageName(url)
-			name && dispatcher.emit(k+':'+name, url, fns.queryParse(url.split('?')[1]))
-		})
-	})
-}
-pageRedirectorDelegate(redirector, ['navigateTo', 'redirectTo', 'switchTab', 'reLaunch'])
-
+/**
+ * 由重定向模块转发到页面内派发器
+ */
+bridge.redirectDelegate(redirector, dispatcher)
 /**
  * Application wrapper
  */
@@ -221,18 +203,6 @@ function appShowHandler () {
 }
 function appHideHandler() {
 	hideTime = new Date()
-}
-
-function preload(url){
-	var name = getPageName(url)
-	name && dispatcher.emit('preload:'+name, url, fns.queryParse(url.split('?')[1]))
-}
-function getPage() {
-	return getCurrentPages().slice(0).pop()
-}
-function getPageName(url) {
-	var m = /^[\w\-]+(?=\?|$)/.exec(url)
-	return m ? m[0] : _conf.get('nameResolve')(url)
 }
 
 WXPage.C = WXPage.Comp = WXPage.Component = C
