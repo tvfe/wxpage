@@ -1,5 +1,5 @@
 /*!
- * wxpage v1.1.4
+ * wxpage v1.1.5
  * https://github.com/tvfe/wxpage
  * License MIT
  */
@@ -455,8 +455,145 @@ module.exports = {
 /* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
+"use strict";
+/**
+ *  Simple Pub/Sub module
+ *  @tencent/message and 减掉fns依赖
+ **/
+
+
+function Message() {
+	this._evtObjs = {};
+}
+Message.prototype.on = function (evtType, handler, _once) {
+	if (!this._evtObjs[evtType]) {
+		this._evtObjs[evtType] = [];
+	}
+	this._evtObjs[evtType].push({
+		handler: handler,
+		once: _once
+	})
+	var that = this
+	return function () {
+		that.off(evtType, handler)
+	}
+}
+Message.prototype.off = function (evtType, handler) {
+	var types;
+	if (evtType) {
+		types = [evtType];
+	} else {
+		types = Object.keys(this._evtObjs)
+	}
+	var that = this;
+	types.forEach(function (type) {
+		if (!handler) {
+			// remove all
+			that._evtObjs[type] = [];
+		} else {
+			var handlers = that._evtObjs[type] || [],
+				nextHandlers = [];
+
+			handlers.forEach(function (evtObj) {
+				if (evtObj.handler !== handler) {
+					nextHandlers.push(evtObj)
+				}
+			})
+			that._evtObjs[type] = nextHandlers;
+		}
+	})
+
+	return this;
+}
+Message.prototype.emit = function (evtType) {
+	var args = Array.prototype.slice.call(arguments, 1)
+
+	var handlers = this._evtObjs[evtType] || [];
+	handlers.forEach(function (evtObj) {
+		if (evtObj.once && evtObj.called) return
+		evtObj.called = true
+		try {
+			evtObj.handler && evtObj.handler.apply(null, args);
+		} catch(e) {
+			console.error(e.stack || e.message || e)
+		}
+	})
+}
+Message.prototype.assign = function (target) {
+	var msg = this;
+	['on', 'off', 'wait', 'emit', 'assign'].forEach(function (name) {
+		var method = msg[name]
+		target[name] = function () {
+			return method.apply(msg, arguments)
+		}
+	})
+}
+/**
+ *  Global Message Central
+ **/
+;(new Message()).assign(Message)
+module.exports = Message;
+
+
+/***/ }),
+/* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+ * 对wx.navigateTo、wx.redirectTo、wx.navigateBack的包装，在它们的基础上添加了事件
+ */
+var Message = __webpack_require__(3)
+var exportee = module.exports = new Message()
+var timer, readyTimer, pending
+
+exportee.on('page:ready', function () {
+	readyTimer = setTimeout(function () {
+		pending = false
+	}, 100)
+})
+function route(type, cfg, args) {
+	if (pending) return
+	pending = true
+	clearTimeout(timer)
+	clearTimeout(readyTimer)
+	/**
+	 * 2s内避免重复的跳转
+	 */
+	timer = setTimeout(function () {
+		pending = false
+	}, 2000)
+	exportee.emit('navigateTo', cfg.url)
+
+	// 会存在不兼容接口，例如：reLaunch
+	if (wx[type]) {
+		return wx[type].apply(wx, args)
+	}
+}
+exportee.navigateTo = function (cfg) {
+	return route('navigateTo', cfg, arguments)
+}
+exportee.redirectTo = function (cfg) {
+	return route('redirectTo', cfg, arguments)
+}
+exportee.switchTab = function (cfg) {
+	return route('switchTab', cfg, arguments)
+}
+exportee.reLaunch = function (cfg) {
+	return route('reLaunch', cfg, arguments)
+}
+exportee.navigateBack = function () {
+  return wx.navigateBack.apply(wx, arguments)
+}
+
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
 var cache = __webpack_require__(1)
-var redirector = __webpack_require__(5)
+var redirector = __webpack_require__(4)
 var conf = __webpack_require__(2)
 var fns = __webpack_require__(0)
 var navigate = route({type: 'navigateTo'})
@@ -627,143 +764,6 @@ function take (key) {
 
 
 /***/ }),
-/* 4 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/**
- *  Simple Pub/Sub module
- *  @tencent/message and 减掉fns依赖
- **/
-
-
-function Message() {
-	this._evtObjs = {};
-}
-Message.prototype.on = function (evtType, handler, _once) {
-	if (!this._evtObjs[evtType]) {
-		this._evtObjs[evtType] = [];
-	}
-	this._evtObjs[evtType].push({
-		handler: handler,
-		once: _once
-	})
-	var that = this
-	return function () {
-		that.off(evtType, handler)
-	}
-}
-Message.prototype.off = function (evtType, handler) {
-	var types;
-	if (evtType) {
-		types = [evtType];
-	} else {
-		types = Object.keys(this._evtObjs)
-	}
-	var that = this;
-	types.forEach(function (type) {
-		if (!handler) {
-			// remove all
-			that._evtObjs[type] = [];
-		} else {
-			var handlers = that._evtObjs[type] || [],
-				nextHandlers = [];
-
-			handlers.forEach(function (evtObj) {
-				if (evtObj.handler !== handler) {
-					nextHandlers.push(evtObj)
-				}
-			})
-			that._evtObjs[type] = nextHandlers;
-		}
-	})
-
-	return this;
-}
-Message.prototype.emit = function (evtType) {
-	var args = Array.prototype.slice.call(arguments, 1)
-
-	var handlers = this._evtObjs[evtType] || [];
-	handlers.forEach(function (evtObj) {
-		if (evtObj.once && evtObj.called) return
-		evtObj.called = true
-		try {
-			evtObj.handler && evtObj.handler.apply(null, args);
-		} catch(e) {
-			console.error(e.stack || e.message || e)
-		}
-	})
-}
-Message.prototype.assign = function (target) {
-	var msg = this;
-	['on', 'off', 'wait', 'emit', 'assign'].forEach(function (name) {
-		var method = msg[name]
-		target[name] = function () {
-			return method.apply(msg, arguments)
-		}
-	})
-}
-/**
- *  Global Message Central
- **/
-;(new Message()).assign(Message)
-module.exports = Message;
-
-
-/***/ }),
-/* 5 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-/**
- * 对wx.navigateTo、wx.redirectTo、wx.navigateBack的包装，在它们的基础上添加了事件
- */
-var Message = __webpack_require__(4)
-var exportee = module.exports = new Message()
-var timer, readyTimer, pending
-
-exportee.on('page:ready', function () {
-	readyTimer = setTimeout(function () {
-		pending = false
-	}, 100)
-})
-function route(type, cfg, args) {
-	if (pending) return
-	pending = true
-	clearTimeout(timer)
-	clearTimeout(readyTimer)
-	/**
-	 * 2s内避免重复的跳转
-	 */
-	timer = setTimeout(function () {
-		pending = false
-	}, 2000)
-	exportee.emit('navigateTo', cfg.url)
-
-	// 会存在不兼容接口，例如：reLaunch
-	if (wx[type]) {
-		return wx[type].apply(wx, args)
-	}
-}
-exportee.navigateTo = function (cfg) {
-	return route('navigateTo', cfg, arguments)
-}
-exportee.redirectTo = function (cfg) {
-	return route('redirectTo', cfg, arguments)
-}
-exportee.switchTab = function (cfg) {
-	return route('switchTab', cfg, arguments)
-}
-exportee.reLaunch = function (cfg) {
-	return route('reLaunch', cfg, arguments)
-}
-exportee.navigateBack = function () {
-  return wx.navigateBack.apply(wx, arguments)
-}
-
-
-/***/ }),
 /* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -771,9 +771,15 @@ exportee.navigateBack = function () {
 
 
 var fns = __webpack_require__(0)
-var bridge = __webpack_require__(3)
+var bridge = __webpack_require__(5)
 var cache = __webpack_require__(1)
 var conf = __webpack_require__(2)
+var redirector = __webpack_require__(4)
+var message = __webpack_require__(3)
+var modules = {
+	fns, redirector, cache, message, dispatcher,
+	channel: bridge.channel
+}
 var dispatcher
 /**
  * Component constructor
@@ -787,7 +793,7 @@ function component(def) {
 	}
 	// extend page config
 	var extendComponentBefore = conf.get('extendComponentBefore')
-	extendComponentBefore && extendComponentBefore(def)
+	extendComponentBefore && extendComponentBefore(def, modules)
 
 	def.created = fns.wrapFun(def.created, function () {
 		bridge.methods(this, dispatcher)
@@ -872,11 +878,11 @@ module.exports = component
 
 
 var fns = __webpack_require__(0)
-var message = __webpack_require__(4)
-var redirector = __webpack_require__(5)
+var message = __webpack_require__(3)
+var redirector = __webpack_require__(4)
 var cache = __webpack_require__(1)
 var C = __webpack_require__(6)
-var bridge = __webpack_require__(3)
+var bridge = __webpack_require__(5)
 var _conf = __webpack_require__(2)
 var dispatcher = new message()
 var hasPageLoaded = 0
