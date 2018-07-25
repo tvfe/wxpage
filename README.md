@@ -32,9 +32,7 @@
 将[dist/wxpage.js](https://github.com/tvfe/wxpage/blob/github/dist/wxpage.js) 放置到你的项目目录下，例如: "lib/wxpage.js"。使用[DEMO](https://github.com/tvfe/wxpage-app)
 
 ```js
-var P = require('./wxpage')
-var A = require('./wxpage').A
-var C = require('./wxpage').C
+var wxpage = require('./wxpage')
 ```
 
 使用 [`CLI`](https://github.com/tvfe/wxpage-cli) 初始化项目：

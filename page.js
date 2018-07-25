@@ -20,6 +20,10 @@ bridge.ref(C.getRef)
 bridge.dispatcher(dispatcher)
 C.dispatcher(dispatcher)
 function WXPage(name, option) {
+	if (fns.type(name) == 'object') {
+		option = name
+		name = option.name || '_unknow'
+	}
 	// page internal message
 	var emitter = new message()
 
@@ -57,8 +61,6 @@ function WXPage(name, option) {
 	}
 	option.$emitter = emitter
 	bridge.methods(option)
-
-
 
 	/**
 	 * Cross pages message methods
@@ -190,8 +192,9 @@ function appHideHandler() {
 	hideTime = new Date()
 }
 
-WXPage.C = WXPage.Comp = WXPage.Component = C
-WXPage.A = WXPage.App = WXPage.Application = Application
+Page.P = WXPage
+Page.C = Component.C = WXPage.C = WXPage.Comp = WXPage.Component = C
+Page.A = App.A = WXPage.A = WXPage.App = WXPage.Application = Application
 WXPage.redirector = redirector
 WXPage.message = message
 WXPage.cache = cache
