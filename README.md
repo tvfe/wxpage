@@ -10,21 +10,20 @@
 * [使用](#使用)
 * [类方法](#类方法)
 * [程序](#程序)
-  - [定义](#-a定义)
-  - [扩展的生命周期](#-a扩展的生命周期)
-  - [扩展的配置](#-a扩展的配置)
+  - [定义](#程序-定义)
+  - [生命周期](#程序-生命周期)
+  - [配置](#程序-配置)
 
 * [组件](#组件)
-  - [定义](#-c定义)
-  - [使用组件](#-c使用组件)
-  - [扩展的生命周期](#-c扩展的生命周期)
-  - [VM实例方法](#-cVM实例方法)
+  - [定义](#组件-定义)
+  - [实例方法](#组件-实例方法)
+  - [实例属性](#组件-实例属性)
 
 * [页面](#页面)
-  - [定义](#-p定义)
-  - [扩展的生命周期](#-p扩展的生命周期)
-  - [实例属性](#-p实例属性)
-  - [实例方法](#-p实例方法)
+  - [定义](#页面-定义)
+  - [生命周期](#页面-生命周期)
+  - [实例属性](#页面-实例属性)
+  - [实例方法](#页面-实例方法)
 * [案例](#谁在用)
 
 ### 使用
@@ -52,6 +51,7 @@ const wxpage = require('/path/to/wxpage.js');
 
 
 - wxpage.**A**(def<`Object`>)
+
   程序定义方法，快捷方法：
   ```js
   App.A({
@@ -60,6 +60,7 @@ const wxpage = require('/path/to/wxpage.js');
   ```
 
 - **wxpage**(def<`Object`>)
+
   页面定义方法，快捷方法：
   ```js
   Page.P({
@@ -68,6 +69,7 @@ const wxpage = require('/path/to/wxpage.js');
   ```
 
 - wxpage.**C**(def<`Object`>)
+
   组件定义方法
   ```js
   const { A } = require('/path/to/wxpage.js')
@@ -77,12 +79,15 @@ const wxpage = require('/path/to/wxpage.js');
   ```
 
 - wxpage.**on**(key<`String`>, handler<`Function`>)
+
   监听APP与页面间的消息
 
 - wxpage.**emit**(key<`String`>, message<`任意`>)
+
   监听APP与页面间的消息
 
 - wxpage.**off**(key<`String`>, handler<`Function`>)
+
   取消监听APP与页面间的消息
 
 
@@ -218,9 +223,11 @@ Component.C({
 #### 组件-实例方法
 
 - **$set**({...})
+
   同 **this.setData({...})**
 
 - **$data**()
+
   获取当前组件的 `data` 对象，同 `this.data`
 
 
@@ -331,6 +338,7 @@ Component.C({
 #### 组件-实例属性
 
 - **$root**
+
 当前组件所属的页面组件实例
 只在 `attached`, `ready`生命周期后生效
 
@@ -348,6 +356,7 @@ Component.C({
 ```
 
 - **$refs**
+
   指定了 `ref` 的子组件实例Map，在父组件获取子组件引用：
 
 ```html
