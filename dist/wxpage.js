@@ -1,5 +1,5 @@
 /*!
- * wxpage v0.0.19
+ * wxpage v1.1.5
  * https://github.com/tvfe/wxpage
  * License MIT
  */
@@ -69,7 +69,7 @@ module.exports =
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 5);
+/******/ 	return __webpack_require__(__webpack_require__.s = 7);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -272,90 +272,6 @@ module.exports = fns
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-/**
- *  Simple Pub/Sub module
- *  @tencent/message and 减掉fns依赖
- **/
-
-
-function Message() {
-	this._evtObjs = {};
-}
-Message.prototype.on = function (evtType, handler, _once) {
-	if (!this._evtObjs[evtType]) {
-		this._evtObjs[evtType] = [];
-	}
-	this._evtObjs[evtType].push({
-		handler: handler,
-		once: _once
-	})
-	var that = this
-	return function () {
-		that.off(evtType, handler)
-	}
-}
-Message.prototype.off = function (evtType, handler) {
-	var types;
-	if (evtType) {
-		types = [evtType];
-	} else {
-		types = Object.keys(this._evtObjs)
-	}
-	var that = this;
-	types.forEach(function (type) {
-		if (!handler) {
-			// remove all
-			that._evtObjs[type] = [];
-		} else {
-			var handlers = that._evtObjs[type] || [],
-				nextHandlers = [];
-
-			handlers.forEach(function (evtObj) {
-				if (evtObj.handler !== handler) {
-					nextHandlers.push(evtObj)
-				}
-			})
-			that._evtObjs[type] = nextHandlers;
-		}
-	})
-
-	return this;
-}
-Message.prototype.emit = function (evtType) {
-	var args = Array.prototype.slice.call(arguments, 1)
-
-	var handlers = this._evtObjs[evtType] || [];
-	handlers.forEach(function (evtObj) {
-		if (evtObj.once && evtObj.called) return
-		evtObj.called = true
-		try {
-			evtObj.handler && evtObj.handler.apply(null, args);
-		} catch(e) {
-			console.error(e.stack || e.message || e)
-		}
-	})
-}
-Message.prototype.assign = function (target) {
-	var msg = this;
-	['on', 'off', 'wait', 'emit', 'assign'].forEach(function (name) {
-		var method = msg[name]
-		target[name] = function () {
-			return method.apply(msg, arguments)
-		}
-	})
-}
-/**
- *  Global Message Central
- **/
-;(new Message()).assign(Message)
-module.exports = Message;
-
-
-/***/ }),
-/* 2 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
 
 
 var fns = __webpack_require__(0)
@@ -478,131 +394,145 @@ module.exports = cache
 
 
 /***/ }),
+/* 2 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var fns = __webpack_require__(0)
+var _conf = {
+	nameResolve: function () {}
+}
+module.exports = {
+	set: function (k, v) {
+		switch(k) {
+			case 'resolvePath':
+				if (fns.type(v) == 'function') {
+					_conf.customRouteResolve = v
+				}
+				break
+			case 'route':
+				let t = fns.type(v)
+				if (t == 'string' || t == 'array') {
+						let routes = (t == 'string' ? [v]:v)
+						let mainRoute = routes[0]
+						routes = routes.map(function (item) {
+							return new RegExp('^'+item
+								.replace(/^\/?/, '/?')
+								.replace(/[\.]/g, '\\.')
+								.replace('$page', '([\\w\\-]+)')
+							)
+						})
+						_conf.routeResolve = function (name) {
+							return mainRoute.replace('$page', name)
+						}
+						_conf.nameResolve = function (url) {
+							var n = ''
+							routes.some(function (reg) {
+								var m = reg.exec(url)
+								if (m) {
+									n = m[1]
+									return true
+								}
+							})
+							return n
+						}
+
+				} else {
+					console.error('Illegal routes option:', v)
+				}
+				break
+			default:
+				_conf[k] = v
+		}
+	},
+	get: function (k) {
+		return _conf[k]
+	}
+}
+
+
+
+/***/ }),
 /* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-
-
-var fns = __webpack_require__(0)
 /**
- * Component instance
- */
-function useComponents(option, comps, label, emitter) {
-	// mixin component defs
-	if (comps) {
-		comps.forEach(function (def) {
-			if (typeof def == 'function') {
-				def = def()
-			}
-			fns.objEach(def, function(k, v) {
-				if (option.hasOwnProperty(k)) {
-					switch(k) {
-						case 'id':
-							// skip
-							return
-						case 'comps':
-							useComponents(option, v, label, emitter)
-							return
-						case 'onLoad':
-						case 'onReady':
-						case 'onShow':
-						case 'onHide':
-						case 'onUnload':
-						case 'onPullDownRefresh':
-						case 'onReachBottom':
-						case 'onPageScroll':
-						// extend
-						case 'onNavigate':
-						case 'onPreload':
-						case 'onLaunch':
-						case 'onAwake':
-						case 'onAppLaunch':
-						case 'onAppShow':
-						case 'onPageLaunch':
-							option[k] = fns.wrapFun(option[k], v)
-							return
-						case 'data':
-							option[k] = fns.extend({}, option.data, v)
-							return
-						default:
-							console.warn(`Property ${k} is already defined by ${label}`);
-					}
+ *  Simple Pub/Sub module
+ *  @tencent/message and 减掉fns依赖
+ **/
+
+
+function Message() {
+	this._evtObjs = {};
+}
+Message.prototype.on = function (evtType, handler, _once) {
+	if (!this._evtObjs[evtType]) {
+		this._evtObjs[evtType] = [];
+	}
+	this._evtObjs[evtType].push({
+		handler: handler,
+		once: _once
+	})
+	var that = this
+	return function () {
+		that.off(evtType, handler)
+	}
+}
+Message.prototype.off = function (evtType, handler) {
+	var types;
+	if (evtType) {
+		types = [evtType];
+	} else {
+		types = Object.keys(this._evtObjs)
+	}
+	var that = this;
+	types.forEach(function (type) {
+		if (!handler) {
+			// remove all
+			that._evtObjs[type] = [];
+		} else {
+			var handlers = that._evtObjs[type] || [],
+				nextHandlers = [];
+
+			handlers.forEach(function (evtObj) {
+				if (evtObj.handler !== handler) {
+					nextHandlers.push(evtObj)
 				}
-				// assign to page option
-				option[k] = v
 			})
+			that._evtObjs[type] = nextHandlers;
+		}
+	})
 
-			def.__$instance && def.__$instance(emitter)
-		})
-	}
+	return this;
+}
+Message.prototype.emit = function (evtType) {
+	var args = Array.prototype.slice.call(arguments, 1)
+
+	var handlers = this._evtObjs[evtType] || [];
+	handlers.forEach(function (evtObj) {
+		if (evtObj.once && evtObj.called) return
+		evtObj.called = true
+		try {
+			evtObj.handler && evtObj.handler.apply(null, args);
+		} catch(e) {
+			console.error(e.stack || e.message || e)
+		}
+	})
+}
+Message.prototype.assign = function (target) {
+	var msg = this;
+	['on', 'off', 'wait', 'emit', 'assign'].forEach(function (name) {
+		var method = msg[name]
+		target[name] = function () {
+			return method.apply(msg, arguments)
+		}
+	})
 }
 /**
- * Component constructor
- */
-function component(name, ctor/*[ ctor ]*/) {
-	var ct = fns.type(name)
-	if ((ct == 'function' || ct == 'object') && arguments.length == 1) {
-		ctor = name
-		name = ''
-	}
-	return function (cid) {
-		var ctx
-		var emitter
-		var dat = {}
-		var vm = {
-			$set: function (data) {
-				if (!cid || !ctx) return
-				ctx.$setData(cid, data)
-			},
-			$data: function () {
-				if (!ctx) return dat
-				else if (cid) return ctx.data[cid]
-			},
-			$on: function(type, handler) {
-				if (!emitter) return noop
-				return emitter.on(type, handler)
-			},
-			$emit: function () {
-				if (!emitter) return
-				emitter.emit.apply(emitter, arguments)
-			}
-		}
-		var def = fns.type(ctor) == 'function'
-			? ctor.call(this, vm)
-			: fns.extend({}, ctor)
-
-		def.onLoad = fns.wrapFun(def.onLoad, function () {
-			ctx = this
-		})
-
-		if (!def) {
-			console.error(`Illegal component options [${name || 'Anonymous'}]`)
-			def = {}
-		}
-		useComponents(def, def.comps, `Component[${name || 'Anonymous'}]`, emitter)
-
-		cid = cid || def.id || name
-		if (!cid) {
-			console.error(`Missing "id" property, it is necessary for component: `, def)
-		}
-		delete def.comps
-		delete def.id
-		if (cid && def.data) {
-			var data = {}
-			dat = data[cid] = def.data
-			data[cid].$id = cid
-			def.data = data
-		}
-		def.__$instance = function (et) {
-			emitter = et
-		}
-		return def
-	}
-}
-function noop() {}
-component.use = useComponents
-module.exports = component
+ *  Global Message Central
+ **/
+;(new Message()).assign(Message)
+module.exports = Message;
 
 
 /***/ }),
@@ -614,7 +544,7 @@ module.exports = component
 /**
  * 对wx.navigateTo、wx.redirectTo、wx.navigateBack的包装，在它们的基础上添加了事件
  */
-var Message = __webpack_require__(1)
+var Message = __webpack_require__(3)
 var exportee = module.exports = new Message()
 var timer, readyTimer, pending
 
@@ -662,37 +592,324 @@ exportee.navigateBack = function () {
 /* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
+var cache = __webpack_require__(1)
+var redirector = __webpack_require__(4)
+var conf = __webpack_require__(2)
+var fns = __webpack_require__(0)
+var navigate = route({type: 'navigateTo'})
+var redirect = route({type: 'redirectTo'})
+var switchTab = route({type: 'switchTab'})
+var reLaunch = route({type: 'reLaunch'})
+var routeMethods = {navigate, redirect, switchTab, reLaunch}
+var bindNavigate = clickDelegate('navigate')
+var bindRedirect = clickDelegate('redirect')
+var bindSwitch = clickDelegate('switchTab')
+var bindReLaunch = clickDelegate('reLaunch')
+var channel = {}
+var dispatcher
+var getRef
+
+module.exports = {
+	channel,
+	dispatcher: function (d) {
+		dispatcher = d
+	},
+	ref: function (fn) {
+		getRef = fn
+	},
+	mount: function (e) {
+		var payload = e.detail
+		switch(payload.type) {
+			case 'attached':
+				let ref = getRef && getRef(payload.id)
+				if (!ref) return
+
+				let refName = ref.properties._ref || ref.properties.ref
+				if (refName) {
+					this.$refs[refName] = ref
+				}
+				ref._$attached(this)
+				break
+			case 'event:call':
+				let method = this[payload.method]
+				method && method.apply(this, payload.args)
+			default:
+				break
+		}
+	},
+	redirectDelegate: function (emitter, dispatcher) {
+		;['navigateTo', 'redirectTo', 'switchTab', 'reLaunch'].forEach(function (k) {
+			emitter.on(k, function (url) {
+				var name = getPageName(url)
+				name && dispatcher.emit(k+':'+name, url, fns.queryParse(url.split('?')[1]))
+			})
+		})
+	},
+	methods: function (ctx) {
+		/**
+		 * 缓存
+		 */
+		ctx.$cache = cache
+		ctx.$session = cache.session
+		/**
+		 * 存一次，取一次
+		 */
+		ctx.$put = put
+		/**
+		 * 只能被取一次
+		 */
+		ctx.$take = take
+		/**
+		 * 实例引用集合
+		 */
+		ctx.$refs = {}
+
+		/**
+		 * 路由方法
+		 */
+		ctx.$route = ctx.$navigate = navigate
+		ctx.$redirect = redirect
+		ctx.$switch = switchTab
+		ctx.$launch = reLaunch
+		ctx.$back = back
+		/**
+		 * 页面预加载
+		 */
+		ctx.$preload = preload
+		/**
+		 * 点击跳转代理
+		 */
+		ctx.$bindRoute = ctx.$bindNavigate = bindNavigate
+		ctx.$bindRedirect = bindRedirect
+		ctx.$bindSwitch = bindSwitch
+		ctx.$bindReLaunch = bindReLaunch
+		/**
+		 * 页面信息
+		 */
+		ctx.$curPage = getPage
+		ctx.$curPageName = curPageName
+	}
+}
+/**
+ * Navigate handler
+ */
+function route ({type}) {
+	// url: $page[?name=value]
+	return function (url, config) {
+		var parts = url.split(/\?/)
+		var pagepath = parts[0]
+		if (/^[\w\-]+$/.test(pagepath)) {
+			pagepath = (conf.get('customRouteResolve') || conf.get('routeResolve'))(pagepath)
+		}
+		if (!pagepath) {
+			throw new Error('Invalid path:', pagepath)
+		}
+		config = config || {}
+		// append querystring
+		config.url = pagepath + (parts[1] ? '?' + parts[1] : '')
+		redirector[type](config)
+	}
+}
+
+function clickDelegate(type) {
+	var _route = routeMethods[type]
+	return function (e) {
+		if (!e) return
+		var dataset = e.currentTarget.dataset
+		var before = dataset.before
+		var after = dataset.after
+		var url = dataset.url
+		var ctx = this
+		try {
+			if (ctx && before && ctx[before]) ctx[before].call(ctx, e)
+		} finally {
+			if (!url) return
+			_route(url)
+			if (ctx && after && ctx[after]) ctx[after].call(ctx, e)
+		}
+	}
+}
+
+function back(delta) {
+	wx.navigateBack({
+		delta: delta || 1
+	})
+}
+function preload(url){
+	var name = getPageName(url)
+	name && dispatcher && dispatcher.emit('preload:'+name, url, fns.queryParse(url.split('?')[1]))
+}
+function getPage() {
+	return getCurrentPages().slice(0).pop()
+}
+function getPageName(url) {
+	var m = /^[\w\-]+(?=\?|$)/.exec(url)
+	return m ? m[0] : conf.get('nameResolve')(url)
+}
+function curPageName () {
+	var route = getPage().route
+	if (!route) return ''
+	return getPageName(route)
+}
+function put (key, value) {
+	channel[key] = value
+	return this
+}
+function take (key) {
+	var v = channel[key]
+	// 释放引用
+	channel[key] = null
+	return v
+}
+
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
 "use strict";
 
 
 var fns = __webpack_require__(0)
-var message = __webpack_require__(1)
+var bridge = __webpack_require__(5)
+var cache = __webpack_require__(1)
+var conf = __webpack_require__(2)
 var redirector = __webpack_require__(4)
-var cache = __webpack_require__(2)
-var Component = __webpack_require__(3)
+var message = __webpack_require__(3)
+var modules = {
+	fns, redirector, cache, message, dispatcher,
+	channel: bridge.channel
+}
+var dispatcher
+/**
+ * Component constructor
+ */
+var refs = {}
+var cid = 0
+function component(def) {
+	if (!def) {
+		console.error(`Illegal component options [${name || 'Anonymous'}]`)
+		def = {}
+	}
+	// extend page config
+	var extendComponentBefore = conf.get('extendComponentBefore')
+	extendComponentBefore && extendComponentBefore(def, modules)
+
+	def.created = fns.wrapFun(def.created, function () {
+		bridge.methods(this, dispatcher)
+	})
+	def.attached = fns.wrapFun(def.attached, function () {
+		var id = ++cid
+		this.$id = id
+		refs[id] = this
+		this.triggerEvent('ing', {
+			id: this.$id,
+			type: 'attached'
+		})
+	})
+	def.detached = fns.wrapFun(def.detached, function () {
+		delete refs[this.$id]
+		var $refs = this.$parent && this.$parent.$refs
+		var refName = this.properties.ref || this.properties._ref
+		if (refName) {
+			delete $refs[refName]
+		}
+		this.$parent = null
+	})
+	def.properties = fns.extend({}, def.properties, {
+    'ref': String
+	})
+	def.methods = fns.extend({}, def.methods, {
+		// 与旧的一致
+		$set: function () {
+			return this.setData.apply(this, arguments)
+		},
+		$data: function () {
+			return this.data
+		},
+		$emit: function () {
+			if (!dispatcher) return
+			return dispatcher.emit.apply(dispatcher, arguments)
+		},
+		$on: function () {
+			if (!dispatcher) return function () {}
+			return dispatcher.on.apply(dispatcher, arguments)
+		},
+		$off: function () {
+			if (!dispatcher) return
+			return dispatcher.off.apply(dispatcher, arguments)
+		},
+		$call: function (method) {
+			var args = [].slice.call(arguments, 1)
+			this.triggerEvent('ing', {
+				id: this.$id,
+				type: 'event:call',
+				method,
+				args
+			})
+		},
+		/**
+		 * 由父组件调用
+		 */
+		_$attached: function (parent) {
+			this.$root = parent.$root || parent
+			this.$parent = parent
+		},
+		$: bridge.mount
+	})
+	Component(def)
+}
+component.getRef = function (id) {
+	return refs[id]
+}
+bridge.ref(component.getRef)
+component.dispatcher = function (d) {
+	dispatcher = d
+}
+Component.C = component
+module.exports = component
+
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var fns = __webpack_require__(0)
+var message = __webpack_require__(3)
+var redirector = __webpack_require__(4)
+var cache = __webpack_require__(1)
+var C = __webpack_require__(6)
+var bridge = __webpack_require__(5)
+var _conf = __webpack_require__(2)
 var dispatcher = new message()
-var channel = {}
 var hasPageLoaded = 0
 var isAppLaunched = 0
 var isAppShowed = 0
 var hideTime = 0
-var routeResolve
-var customRouteResolve
-var nameResolve
-var extendPageBefore
-var extendPageAfter
 var modules = {
-	fns, redirector, cache, message, dispatcher, channel
+	fns, redirector, cache, message, dispatcher,
+	channel: bridge.channel
 }
+bridge.ref(C.getRef)
+bridge.dispatcher(dispatcher)
+C.dispatcher(dispatcher)
 function WXPage(name, option) {
+	if (fns.type(name) == 'object') {
+		option = name
+		name = option.name || '_unknow'
+	}
 	// page internal message
 	var emitter = new message()
 
 	// extend page config
+	var extendPageBefore = _conf.get('extendPageBefore')
 	extendPageBefore && extendPageBefore(name, option, modules)
 
 	// mixin component defs
-	Component.use(option, option.comps, `Page[${name}]`, emitter)
+	// C.use(option, option.comps, `Page[${name}]`, emitter)
 	if (option.onNavigate){
 		let onNavigateHandler = function (url, query) {
 			option.onNavigate({url, query})
@@ -713,37 +930,14 @@ function WXPage(name, option) {
 		})
 	}
 	/**
-	 * Preload another page in current page
-	 */
-	option.$preload = preload
-	/**
 	 * Instance props
 	 */
-	option.$name = name
-	option.$cache = cache
-	option.$session = cache.session
-	option.$emitter = emitter
 	option.$state = {
 		// 是否小程序被打开首页启动页面
 		firstOpen: false
 	}
-
-	/**
-	 * Instance method hook
-	 */
-	option.$route = option.$navigate = navigate
-	option.$redirect = redirect
-	option.$switch = switchTab
-	option.$launch = reLaunch
-	option.$back = back
-
-	/**
-	 * Click delegate methods
-	 */
-	option.$bindRoute = option.$bindNavigate = bindNavigate
-	option.$bindRedirect = bindRedirect
-	option.$bindSwitch = bindSwitch
-	option.$bindReLaunch = bindReLaunch
+	option.$emitter = emitter
+	bridge.methods(option)
 
 	/**
 	 * Cross pages message methods
@@ -758,21 +952,9 @@ function WXPage(name, option) {
 		return dispatcher.off.apply(dispatcher, arguments)
 	}
 	/**
-	 * 存一次，取一次
+	 * 父子通信枢纽模块
 	 */
-	option.$put = function (key, value) {
-		channel[key] = value
-		return this
-	}
-	/**
-	 * 只能被取一次
-	 */
-	option.$take = function (key) {
-		var v = channel[key]
-		// 释放引用
-		channel[key] = null
-		return v
-	}
+	option.$ = bridge.mount
 	/**
 	 * setData wrapper, for component setData with prefix
 	 * @param {String} prefix prefix of component's data
@@ -788,14 +970,6 @@ function WXPage(name, option) {
 		} else if (fns.type(prefix) == 'object') {
 			return this.setData(prefix)
 		}
-	}
-	option.$curPage = function () {
-		return getPage()
-	}
-	option.$curPageName = function () {
-		var route = getPage().route
-		if (!route) return ''
-		return getPageName(route)
 	}
 	/**
 	 * AOP life-cycle methods hook
@@ -832,21 +1006,16 @@ function WXPage(name, option) {
 	}
 
 	// extend page config
+	var extendPageAfter = _conf.get('extendPageAfter')
 	extendPageAfter && extendPageAfter(name, option, modules)
 	// register page
 	Page(option)
 	return option;
 }
-function pageRedirectorDelegate(emitter, keys) {
-	keys.forEach(function (k) {
-		emitter.on(k, function (url) {
-			var name = getPageName(url)
-			name && dispatcher.emit(k+':'+name, url, fns.queryParse(url.split('?')[1]))
-		})
-	})
-}
-pageRedirectorDelegate(redirector, ['navigateTo', 'redirectTo', 'switchTab', 'reLaunch'])
-
+/**
+ * 由重定向模块转发到页面内派发器
+ */
+bridge.redirectDelegate(redirector, dispatcher)
 /**
  * Application wrapper
  */
@@ -900,76 +1069,9 @@ function appHideHandler() {
 	hideTime = new Date()
 }
 
-/**
- * Redirect functions
- */
-var navigate = route({type: 'navigateTo'})
-var redirect = route({type: 'redirectTo'})
-var switchTab = route({type: 'switchTab'})
-var reLaunch = route({type: 'reLaunch'})
-var routeMethods = {navigate, redirect, switchTab, reLaunch}
-var bindNavigate = clickDelegate('navigate')
-var bindRedirect = clickDelegate('redirect')
-var bindSwitch = clickDelegate('switchTab')
-var bindReLaunch = clickDelegate('reLaunch')
-
-function clickDelegate(type) {
-	var _route = routeMethods[type]
-	return function (e) {
-		if (!e) return
-		var dataset = e.currentTarget.dataset
-		var before = dataset.before
-		var after = dataset.after
-		var url = dataset.url
-		var ctx = this
-		try {
-			if (ctx && before && ctx[before]) ctx[before].call(ctx, e)
-		} finally {
-			if (!url) return
-			_route(url)
-			if (ctx && after && ctx[after]) ctx[after].call(ctx, e)
-		}
-	}
-}
-function back(delta) {
-	wx.navigateBack({
-		delta: delta || 1
-	})
-}
-function preload(url){
-	var name = getPageName(url)
-	name && dispatcher.emit('preload:'+name, url, fns.queryParse(url.split('?')[1]))
-}
-/**
- * Navigate handler
- */
-function route ({type}) {
-	// url: $page[?name=value]
-	return function (url, config) {
-		var parts = url.split(/\?/)
-		var pagepath = parts[0]
-		if (/^[\w\-]+$/.test(pagepath)) {
-			pagepath = (customRouteResolve || routeResolve)(pagepath)
-		}
-		if (!pagepath) {
-			throw new Error('Invalid path:', pagepath)
-		}
-		config = config || {}
-		// append querystring
-		config.url = pagepath + (parts[1] ? '?' + parts[1] : '')
-		redirector[type](config)
-	}
-}
-function getPage() {
-	return getCurrentPages().slice(0).pop()
-}
-function getPageName(url) {
-	var m = /^[\w\-]+(?=\?|$)/.exec(url)
-	return m ? m[0] : nameResolve(url)
-}
-
-WXPage.C = WXPage.Comp = WXPage.Component = Component
-WXPage.A = WXPage.App = WXPage.Application = Application
+Page.P = WXPage
+Page.C = Component.C = WXPage.C = WXPage.Comp = WXPage.Component = C
+Page.A = App.A = WXPage.A = WXPage.App = WXPage.Application = Application
 WXPage.redirector = redirector
 WXPage.message = message
 WXPage.cache = cache
@@ -979,64 +1081,18 @@ WXPage.fns = fns
  * Config handler
  */
 
-function _conf(k, v) {
-	switch(k) {
-		case 'extendPageBefore':
-			extendPageBefore = v
-			break
-		case 'extendPageAfter':
-			extendPageAfter = v
-			break
-		case 'resolvePath':
-			if (fns.type(v) == 'function') {
-				customRouteResolve = v
-			}
-			break
-		case 'route':
-			let t = fns.type(v)
-			if (t == 'string' || t == 'array') {
-					let routes = (t == 'string' ? [v]:v)
-					let mainRoute = routes[0]
-					routes = routes.map(function (item) {
-						return new RegExp('^'+item
-							.replace(/^\/?/, '/?')
-							.replace(/[\.]/g, '\\.')
-							.replace('$page', '([\\w\\-]+)')
-						)
-					})
-					routeResolve = function (name) {
-						return mainRoute.replace('$page', name)
-					}
-					nameResolve = function (url) {
-						var n = ''
-						routes.some(function (reg) {
-							var m = reg.exec(url)
-							if (m) {
-								n = m[1]
-								return true
-							}
-						})
-						return n
-					}
-
-			} else {
-				console.error('Illegal routes option:', v)
-			}
-			break
-	}
-}
 WXPage.config = function (key, value) {
 	if (fns.type(key) == 'object') {
 		fns.objEach(key, function (k, v) {
-			_conf(k, v)
+			_conf.set(k, v)
 		})
 	} else {
-		_conf(key, value)
+		_conf.set(key, value)
 	}
 	return this
 }
 message.assign(WXPage)
-message.assign(Component)
+message.assign(C)
 message.assign(Application)
 module.exports = WXPage
 

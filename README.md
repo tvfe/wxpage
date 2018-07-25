@@ -32,9 +32,7 @@
 将[dist/wxpage.js](https://github.com/tvfe/wxpage/blob/github/dist/wxpage.js) 放置到你的项目目录下，例如: "lib/wxpage.js"。使用[DEMO](https://github.com/tvfe/wxpage-app)
 
 ```js
-var P = require('./wxpage')
-var A = require('./wxpage').A
-var C = require('./wxpage').C
+var wxpage = require('./wxpage')
 ```
 
 使用 [`CLI`](https://github.com/tvfe/wxpage-cli) 初始化项目：
@@ -49,20 +47,34 @@ wxpage init
 ### 类方法
 
 ```js
-var wxpage = require('/path/to/wxpage.js')
-wxpage.A
-wxpage.C
-/* ... */
+const wxpage = require('/path/to/wxpage.js');
 ```
 
-- **wxpage**(def<`Object`>)
-  页面定义方法
 
 - wxpage.**A**(def<`Object`>)
-  程序定义方法
+  程序定义方法，快捷方法：
+  ```js
+  App.A({
+
+  });
+  ```
+
+- **wxpage**(def<`Object`>)
+  页面定义方法，快捷方法：
+  ```js
+  Page.P({
+
+  });
+  ```
 
 - wxpage.**C**(def<`Object`>)
   组件定义方法
+  ```js
+  const { A } = require('/path/to/wxpage.js')
+  A({
+
+  });
+  ```
 
 - wxpage.**on**(key<`String`>, handler<`Function`>)
   监听APP与页面间的消息
@@ -75,11 +87,13 @@ wxpage.C
 
 
 ### 程序
-#### ❖ A`/`定义
+在小程序的入口文件 `app.js` 里定义
+
+#### 程序-定义
 
 示例：
 ```js
-var A = require('./wxpage').A
+const { A } = require('./wxpage')
 A({
   config: {
     route: '/pages/$page'   // $page 会被替换成页面名
@@ -90,16 +104,25 @@ A({
   onShow: function () {
 
   }
-})
+});
 ```
 
-#### ❖ A`/`扩展的生命周期
+#### 程序-生命周期
 
-- **onAwake(time`<Number>`)**
+- **onAwake**(time`<Number>`)
 
   小程序进入后台模式后再激活的时候触发。`time`是耗时。
 
-#### ❖ A`/`扩展的配置(config)
+#### 程序-配置
+
+`wxpage`所扩展的配置
+```js
+A({
+  config: {
+    /*所有微信wxpage所需的配置*/
+  }
+});
+```
 
 - **route** `必需`
 
@@ -111,13 +134,15 @@ A({
 - **resolvePath(name`<String>`)** `可选`
 
   ```js
+  A({
+
     config: {
       route: ['/page/$page', '/pages/$page'],
       resolvePath: function (name) {
         return `/page/${name}`
       }
     }
-
+  });
   ```
 
 - **extendPageBefore(name, def, modules)** `可选`
@@ -128,89 +153,244 @@ A({
 
   自定义扩展页面，在框架执行扩展之后。
 
-### 组件
-#### ❖ C`/`定义
+- **extendComponentBefore(def)** `可选`
 
-示例：
-```html
-<template name="comp">
-  <button>It is component: {{name}}</button>
-</template>
-```
-
-```js
-var C = require('./wxpage').C
-C('comp', function (vm) {
-  return {
-    data: {/*...*/},
-    onLoad: function () {
-      // do something
-      vm.$set({
-        name: 'comp'
-      })
-    }
-  }
-})
-```
-
-#### ❖ C`/`使用组件
-
-模板:
-```html
-<import src="/path/to/comp.wxml"></import>
-
-<template is="item" data="{{...comp}}"/>
-```
-
-Page:
-```js
-var P = require('./wxpage')
-P({
-  comps: [require('/path/to/comp')]
-})
-```
-
-#### ❖ C`/`扩展的生命周期
-
-同页面的生命周期
-
-#### ❖ C`/`VM实例方法
-
-- **$set({...})**
-
-  同 **this.setData({...})**，但只对当前组件数据生效
+  自定义扩展组件，在框架执行扩展之前。例如为每个组件挂在一个实例方法：
   ```js
-  vm.$set({
-    title: 'This is component'
-  })
+  A({
+    config: {
+      extendComponentBefore: function (def, { fns }) {
+        fns.wrapFun(def.created, function () {
+          this.request = function () {
+            // ...
+          }
+        })
+      }
+    }
+  });
   ```
 
-- **$data()**
 
-  获取当前组件的 `data` 对象
+### 组件
+基于小程序原生组件方案的扩展，提供了父-子组件间的关系引用，一些实用的实例方法等
+
+#### 组件-定义
+
+- 构造方法、配置声明
+
+{COMPONENT}.js
+```js
+Component.C({
+  data: {},
+  attached: function () {
+    /**
+     * this.$root
+     * this.$parent
+     */
+  }
+});
+```
+
+{COMPONENT}.json
+```json
+{
+  "component": true
+}
+```
+
+
+- 使用
+
+{PAGE}.json
+```json
+{
+  "usingComponents": {
+    "{COMPONENT}": "/comps/{COMPONENT}/{COMPONENT}"
+  }
+}
+```
+
+{PAGE}.wxml
+```html
+<custom-component binding="$" />
+```
+
+#### 组件-实例方法
+
+- **$set**({...})
+  同 **this.setData({...})**
+
+- **$data**()
+  获取当前组件的 `data` 对象，同 `this.data`
+
+
+- **$curPage**()
+
+  获取当前页面实例。取 **getCurrentPages** 的最后一个项。
+
+- **$curPageName**()
+
+  获取当前页面实例对应的页面名。根据[A.config.route](#-a扩展的配置config) 的配置解析当前页面实例的route。
+  > Notice: 由于基础库1.2.0以下不支持 Page.prototype.route，故不兼容场景只能取到空字符串
+
+- **$on**(key, handler)
+
+  监听跨页面间的消息
+
+- **$emit**(key, data)
+
+  派发页面间的消息
+
+- **$off**(key, handler)
+
+  取消监听消息
+
+- **$set**(data)
+
+  等同于 `this.setData(data)`
+
+- **$data**()
+
+  等同于 `this.data`
+
+- **$call**(method, arg1, arg2[, ...])
+
+  通过消息的方式调用父组件方法，方法不存在也不会报错
+
+- **$route**(pagename[, config]) => 别名 **$navigate**
+
+  wx.`navigateTo`的封装。跳转到指定页面，pagename 可以带上 `queryString`, 例如
+
+  ```js
+  this.$route('play?vid=xxx&cid=xxx');
+  ```
+
+- **$redirect**(pagename[, config])
+
+  wx.`redirectTo`的封装。跳转到指定页面, **替换页面，不产生历史**，pagename 可以带上 `queryString`, 例如
+
+  ```js
+  this.$redirect('play?vid=xxx&cid=xxx');
+  ```
+
+- **$switch**(pagename[, config])
+
+  wx.`switchTab`的封装。
+
+- **$launch**(pagename[, config])
+
+  wx.`reLaunch`的封装。
+
+- **$back**([delta])
+
+  wx.`navigateBack`的封装。
+  ```js
+  this.$back();
+  ```
+
+- **$preload**(pagename)
+
+  提前预加载指定页面（会触发对应页面的`onPreload`声明周期）
+  ```js
+  this.$preload('play?vid=xxx&cid=xxx');
+  ```
+
+- **$bindRoute**()
+
+> 同页面
+
+
+- **$bindRedirect**()
+
+  同 **$bindRoute**, 绑定 `$onRedirect`
+
+- **$bindSwitch**()
+
+  同 **$bindRoute**, 绑定 `$onSwitch`
+
+- **$on**(key, handler)
+
+  监听跨页面间的消息
+
+- **$emit**(key, data)
+
+  派发页面间的消息。
+
+- **$off**(key, handler)
+
+  取消监听消息
+
+- **$put**(id, value)
+
+> 同页面
+
+- **$take**(id)
+
+> 同页面
+
+#### 组件-实例属性
+
+- **$root**
+当前组件所属的页面组件实例
+只在 `attached`, `ready`生命周期后生效
+
+- **$parent**
+
+在组件内获取父组件实例引用
+
+```js
+Component.C({
+  attached: function () {
+    this.$parent.data // 父组件
+    this.$root.data   // 根组件，可能是父组件
+  }
+});
+```
+
+- **$refs**
+  指定了 `ref` 的子组件实例Map，在父组件获取子组件引用：
+
+```html
+<custom-component binding="$" ref="customComp"/>
+```
+
+```js
+Page.P({
+  onLoad: function () {
+    this.$refs.customComp // 根据ref属性获取子组件的实例引用
+  }
+});
+```
+
+- **$cache**
+
+> 同页面缓存模块
+
+- **$session**
+
+> 同页面缓存模块
+
 
 ### 页面
-#### ❖ P`/`定义
+`wxpage` 为页面组件扩展了一些利于优化需求使用的声明周期方法与及实例方法
 
-示例：
+#### 页面-定义
+
 ```js
-var P = require('./wxpage')
-P('index', {
-  data: {/*...*/},
-  onAppLaunch: function () {
-    // do something
+Page.P('{PNAME}', {
+  data: {
+    message: 'Hello MINA!'
   },
-  onPageLaunch: function () {
-    // do something
+  onNavigate: function () {
+    this.$preload('detail?id=xxx')
   },
   onLoad: function () {
-    // do something
   }
 })
 ```
 
 
-#### ❖ P`/`扩展的生命周期
+#### 页面-生命周期
 
 - **onPageLaunch()**
 
@@ -258,7 +438,7 @@ P('index', {
   ```
 
 
-#### ❖ P`/`实例属性
+#### 页面-实例属性
 
 - **$name**
 
@@ -282,7 +462,7 @@ P('index', {
     * `cb`      可选，异步读的时候回调，接收参数：cb(err, data), err不为空代表失败。
 
   ```js
-  Page({
+  Page.P({
     onLoad: function () {
       // 同步写
       this.$cache.set('page_data', {
@@ -315,7 +495,7 @@ P('index', {
         }, true)
       }, 200)
     }
-  })
+  });
   ```
 
 
@@ -332,7 +512,7 @@ P('index', {
           name: '首页'
       })
     }
-  })
+  });
   ```
 
 - **$emitter**
@@ -343,8 +523,14 @@ P('index', {
    - `emit` 派发
    - `off`  取消监听
 
+- **$refs**
 
-#### ❖ P`/`实例方法
+  指定了 `ref` 的子组件实例Map
+
+
+
+
+#### 页面-实例方法
 
 - **$setData**([prefix<`String`>, ]obj)
 
@@ -364,7 +550,7 @@ P('index', {
   wx.`navigateTo`的封装。跳转到指定页面，pagename 可以带上 `queryString`, 例如
 
   ```js
-  this.$route('play?vid=xxx&cid=xxx')
+  this.$route('play?vid=xxx&cid=xxx');
   ```
 
 - **$redirect**(pagename[, config])
@@ -372,7 +558,7 @@ P('index', {
   wx.`redirectTo`的封装。跳转到指定页面, **替换页面，不产生历史**，pagename 可以带上 `queryString`, 例如
 
   ```js
-  this.$redirect('play?vid=xxx&cid=xxx')
+  this.$redirect('play?vid=xxx&cid=xxx');
   ```
 
 - **$switch**(pagename[, config])
@@ -387,14 +573,14 @@ P('index', {
 
   wx.`navigateBack`的封装。
   ```js
-  this.$back()
+  this.$back();
   ```
 
 - **$preload**(pagename)
 
   提前预加载指定页面（会触发对应页面的`onPreload`声明周期）
   ```js
-  this.$preload('play?vid=xxx&cid=xxx')
+  this.$preload('play?vid=xxx&cid=xxx');
   ```
 
 - **$bindRoute**()
@@ -447,14 +633,13 @@ P('index', {
     wx.request(url, function (err, data) {
       resolve(data)
     })
-  }))
-
+  }));
   this.$take('play:prefetch').then(function (data) {
     // get data
-  })
-
-  this.$take('play:prefetch') // => null
+  });
+  this.$take('play:prefetch'); // => null
   ```
+
 
 ## 谁在用
 

@@ -4,30 +4,35 @@ var fns = require('./lib/fns.js')
 var message = require('./lib/message')
 var redirector = require('./lib/redirector')
 var cache = require('./lib/cache')
-var Component = require('./lib/component.js')
+var C = require('./lib/component')
+var bridge = require('./lib/bridge')
+var _conf = require('./lib/conf')
 var dispatcher = new message()
-var channel = {}
 var hasPageLoaded = 0
 var isAppLaunched = 0
 var isAppShowed = 0
 var hideTime = 0
-var routeResolve
-var customRouteResolve
-var nameResolve
-var extendPageBefore
-var extendPageAfter
 var modules = {
-	fns, redirector, cache, message, dispatcher, channel
+	fns, redirector, cache, message, dispatcher,
+	channel: bridge.channel
 }
+bridge.ref(C.getRef)
+bridge.dispatcher(dispatcher)
+C.dispatcher(dispatcher)
 function WXPage(name, option) {
+	if (fns.type(name) == 'object') {
+		option = name
+		name = option.name || '_unknow'
+	}
 	// page internal message
 	var emitter = new message()
 
 	// extend page config
+	var extendPageBefore = _conf.get('extendPageBefore')
 	extendPageBefore && extendPageBefore(name, option, modules)
 
 	// mixin component defs
-	Component.use(option, option.comps, `Page[${name}]`, emitter)
+	// C.use(option, option.comps, `Page[${name}]`, emitter)
 	if (option.onNavigate){
 		let onNavigateHandler = function (url, query) {
 			option.onNavigate({url, query})
@@ -48,37 +53,14 @@ function WXPage(name, option) {
 		})
 	}
 	/**
-	 * Preload another page in current page
-	 */
-	option.$preload = preload
-	/**
 	 * Instance props
 	 */
-	option.$name = name
-	option.$cache = cache
-	option.$session = cache.session
-	option.$emitter = emitter
 	option.$state = {
 		// 是否小程序被打开首页启动页面
 		firstOpen: false
 	}
-
-	/**
-	 * Instance method hook
-	 */
-	option.$route = option.$navigate = navigate
-	option.$redirect = redirect
-	option.$switch = switchTab
-	option.$launch = reLaunch
-	option.$back = back
-
-	/**
-	 * Click delegate methods
-	 */
-	option.$bindRoute = option.$bindNavigate = bindNavigate
-	option.$bindRedirect = bindRedirect
-	option.$bindSwitch = bindSwitch
-	option.$bindReLaunch = bindReLaunch
+	option.$emitter = emitter
+	bridge.methods(option)
 
 	/**
 	 * Cross pages message methods
@@ -93,21 +75,9 @@ function WXPage(name, option) {
 		return dispatcher.off.apply(dispatcher, arguments)
 	}
 	/**
-	 * 存一次，取一次
+	 * 父子通信枢纽模块
 	 */
-	option.$put = function (key, value) {
-		channel[key] = value
-		return this
-	}
-	/**
-	 * 只能被取一次
-	 */
-	option.$take = function (key) {
-		var v = channel[key]
-		// 释放引用
-		channel[key] = null
-		return v
-	}
+	option.$ = bridge.mount
 	/**
 	 * setData wrapper, for component setData with prefix
 	 * @param {String} prefix prefix of component's data
@@ -123,14 +93,6 @@ function WXPage(name, option) {
 		} else if (fns.type(prefix) == 'object') {
 			return this.setData(prefix)
 		}
-	}
-	option.$curPage = function () {
-		return getPage()
-	}
-	option.$curPageName = function () {
-		var route = getPage().route
-		if (!route) return ''
-		return getPageName(route)
 	}
 	/**
 	 * AOP life-cycle methods hook
@@ -167,21 +129,16 @@ function WXPage(name, option) {
 	}
 
 	// extend page config
+	var extendPageAfter = _conf.get('extendPageAfter')
 	extendPageAfter && extendPageAfter(name, option, modules)
 	// register page
 	Page(option)
 	return option;
 }
-function pageRedirectorDelegate(emitter, keys) {
-	keys.forEach(function (k) {
-		emitter.on(k, function (url) {
-			var name = getPageName(url)
-			name && dispatcher.emit(k+':'+name, url, fns.queryParse(url.split('?')[1]))
-		})
-	})
-}
-pageRedirectorDelegate(redirector, ['navigateTo', 'redirectTo', 'switchTab', 'reLaunch'])
-
+/**
+ * 由重定向模块转发到页面内派发器
+ */
+bridge.redirectDelegate(redirector, dispatcher)
 /**
  * Application wrapper
  */
@@ -235,76 +192,9 @@ function appHideHandler() {
 	hideTime = new Date()
 }
 
-/**
- * Redirect functions
- */
-var navigate = route({type: 'navigateTo'})
-var redirect = route({type: 'redirectTo'})
-var switchTab = route({type: 'switchTab'})
-var reLaunch = route({type: 'reLaunch'})
-var routeMethods = {navigate, redirect, switchTab, reLaunch}
-var bindNavigate = clickDelegate('navigate')
-var bindRedirect = clickDelegate('redirect')
-var bindSwitch = clickDelegate('switchTab')
-var bindReLaunch = clickDelegate('reLaunch')
-
-function clickDelegate(type) {
-	var _route = routeMethods[type]
-	return function (e) {
-		if (!e) return
-		var dataset = e.currentTarget.dataset
-		var before = dataset.before
-		var after = dataset.after
-		var url = dataset.url
-		var ctx = this
-		try {
-			if (ctx && before && ctx[before]) ctx[before].call(ctx, e)
-		} finally {
-			if (!url) return
-			_route(url)
-			if (ctx && after && ctx[after]) ctx[after].call(ctx, e)
-		}
-	}
-}
-function back(delta) {
-	wx.navigateBack({
-		delta: delta || 1
-	})
-}
-function preload(url){
-	var name = getPageName(url)
-	name && dispatcher.emit('preload:'+name, url, fns.queryParse(url.split('?')[1]))
-}
-/**
- * Navigate handler
- */
-function route ({type}) {
-	// url: $page[?name=value]
-	return function (url, config) {
-		var parts = url.split(/\?/)
-		var pagepath = parts[0]
-		if (/^[\w\-]+$/.test(pagepath)) {
-			pagepath = (customRouteResolve || routeResolve)(pagepath)
-		}
-		if (!pagepath) {
-			throw new Error('Invalid path:', pagepath)
-		}
-		config = config || {}
-		// append querystring
-		config.url = pagepath + (parts[1] ? '?' + parts[1] : '')
-		redirector[type](config)
-	}
-}
-function getPage() {
-	return getCurrentPages().slice(0).pop()
-}
-function getPageName(url) {
-	var m = /^[\w\-]+(?=\?|$)/.exec(url)
-	return m ? m[0] : nameResolve(url)
-}
-
-WXPage.C = WXPage.Comp = WXPage.Component = Component
-WXPage.A = WXPage.App = WXPage.Application = Application
+Page.P = WXPage
+Page.C = Component.C = WXPage.C = WXPage.Comp = WXPage.Component = C
+Page.A = App.A = WXPage.A = WXPage.App = WXPage.Application = Application
 WXPage.redirector = redirector
 WXPage.message = message
 WXPage.cache = cache
@@ -314,63 +204,17 @@ WXPage.fns = fns
  * Config handler
  */
 
-function _conf(k, v) {
-	switch(k) {
-		case 'extendPageBefore':
-			extendPageBefore = v
-			break
-		case 'extendPageAfter':
-			extendPageAfter = v
-			break
-		case 'resolvePath':
-			if (fns.type(v) == 'function') {
-				customRouteResolve = v
-			}
-			break
-		case 'route':
-			let t = fns.type(v)
-			if (t == 'string' || t == 'array') {
-					let routes = (t == 'string' ? [v]:v)
-					let mainRoute = routes[0]
-					routes = routes.map(function (item) {
-						return new RegExp('^'+item
-							.replace(/^\/?/, '/?')
-							.replace(/[\.]/g, '\\.')
-							.replace('$page', '([\\w\\-]+)')
-						)
-					})
-					routeResolve = function (name) {
-						return mainRoute.replace('$page', name)
-					}
-					nameResolve = function (url) {
-						var n = ''
-						routes.some(function (reg) {
-							var m = reg.exec(url)
-							if (m) {
-								n = m[1]
-								return true
-							}
-						})
-						return n
-					}
-
-			} else {
-				console.error('Illegal routes option:', v)
-			}
-			break
-	}
-}
 WXPage.config = function (key, value) {
 	if (fns.type(key) == 'object') {
 		fns.objEach(key, function (k, v) {
-			_conf(k, v)
+			_conf.set(k, v)
 		})
 	} else {
-		_conf(key, value)
+		_conf.set(key, value)
 	}
 	return this
 }
 message.assign(WXPage)
-message.assign(Component)
+message.assign(C)
 message.assign(Application)
 module.exports = WXPage

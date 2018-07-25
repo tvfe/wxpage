@@ -1,7 +1,6 @@
-<import src="/comps/header.wxml" />
 
 <view class="wxpage">
-	<template is="header" data="{{...header}}"></template>
+	<header binding="$"></header>
 	<view >It is play page</view>
 	<image src="https://img1.gtimg.com/v/pics/hv1/252/25/2195/142736502.jpg"></image>
 	<image src="https://img1.gtimg.com/v/pics/hv1/252/25/2195/142736502.jpg"></image>

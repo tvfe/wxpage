@@ -1,27 +1,20 @@
 var P = require('../lib/wxpage')
-var Header = require('../comps/header')
-
-
 P('play', {
-	comps: [Header],
 	data: {},
 	onPreload: function (res) {
-		console.log('## On play page preload, with query:', res)
+		console.log('[pages/play] 页面预加载:', res)
 	},
 	onNavigate: function (res) {
-		console.log('## On play page navigate, with query:', res)
+		console.log('[pages/play] 页面将要跳转：', res)
 	},
 	onLoad: function(res) {
-		console.log('## On play page load, with query:', res)
+		console.log('[pages/play] 页面完成加载', res)
 		var t = this.$take('t')
 	},
 	onShow: function () {
-		console.log('## On play page show')
+		console.log('[pages/play] 页面展示')
 	},
 	onReady: function () {
-		console.log('## On play page ready')
-		setTimeout(function () {
-			console.log('## On play page ready timer')
-		}, 100)
+		console.log('[pages/play] 页面已就绪')
 	}
 })

@@ -1,0 +1,5 @@
+<view>
+  Header Component!
+  <view></view>
+  <nav binding="$" ref="nav"></nav>
+</view>
