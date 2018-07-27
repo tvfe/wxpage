@@ -1,5 +1,5 @@
 /*!
- * wxpage v1.1.5
+ * wxpage v1.1.6
  * https://github.com/tvfe/wxpage
  * License MIT
  */
@@ -624,8 +624,8 @@ module.exports = {
 				let ref = getRef && getRef(payload.id)
 				if (!ref) return
 
-				let refName = ref.properties._ref || ref.properties.ref
-				if (refName) {
+				let refName = ref._$ref
+				if (refName && this.$refs) {
 					this.$refs[refName] = ref
 				}
 				ref._$attached(this)
@@ -802,6 +802,7 @@ function component(def) {
 		var id = ++cid
 		this.$id = id
 		refs[id] = this
+		this._$ref = this.properties.ref || this.properties._ref
 		this.triggerEvent('ing', {
 			id: this.$id,
 			type: 'attached'
@@ -810,14 +811,33 @@ function component(def) {
 	def.detached = fns.wrapFun(def.detached, function () {
 		delete refs[this.$id]
 		var $refs = this.$parent && this.$parent.$refs
-		var refName = this.properties.ref || this.properties._ref
-		if (refName) {
+		var refName = this._$ref
+		if (refName && $refs) {
 			delete $refs[refName]
 		}
 		this.$parent = null
 	})
 	def.properties = fns.extend({}, def.properties, {
-    'ref': String
+    'ref': {
+    	type: String,
+      value: '',
+      observer: function(next) {
+      	/**
+      	 * 支持动态 ref
+      	 */
+      	if (this._$ref !== next) {
+					var $refs = this.$parent && this.$parent.$refs
+					if ($refs) {
+						let ref = $refs[this._$ref]
+						delete $refs[this._$ref]
+						this._$ref = next
+						if (ref && next) {
+							$refs[next]
+						}
+					}
+      	}
+      }
+    },
 	})
 	def.methods = fns.extend({}, def.methods, {
 		// 与旧的一致
