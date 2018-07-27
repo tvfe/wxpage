@@ -1058,7 +1058,7 @@ function component(def) {
 						let ref = $refs[this._$ref]
 						delete $refs[this._$ref]
 						this._$ref = next
-						if (ref) {
+						if (ref && next) {
 							$refs[next]
 						}
 					}
