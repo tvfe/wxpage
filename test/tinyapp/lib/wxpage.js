@@ -1,5 +1,5 @@
 /*!
- * wxpage v1.0.19
+ * wxpage v1.1.5
  * https://github.com/tvfe/wxpage
  * License MIT
  */
@@ -275,12 +275,12 @@ module.exports = fns
 
 
 var fns = __webpack_require__(0)
-var message = __webpack_require__(5)
-var redirector = __webpack_require__(6)
+var message = __webpack_require__(4)
+var redirector = __webpack_require__(5)
 var cache = __webpack_require__(2)
 var C = __webpack_require__(7)
-var bridge = __webpack_require__(3)
-var _conf = __webpack_require__(4)
+var bridge = __webpack_require__(6)
+var _conf = __webpack_require__(3)
 var dispatcher = new message()
 var hasPageLoaded = 0
 var isAppLaunched = 0
@@ -294,6 +294,10 @@ bridge.ref(C.getRef)
 bridge.dispatcher(dispatcher)
 C.dispatcher(dispatcher)
 function WXPage(name, option) {
+	if (fns.type(name) == 'object') {
+		option = name
+		name = option.name || '_unknow'
+	}
 	// page internal message
 	var emitter = new message()
 
@@ -331,8 +335,6 @@ function WXPage(name, option) {
 	}
 	option.$emitter = emitter
 	bridge.methods(option)
-
-
 
 	/**
 	 * Cross pages message methods
@@ -464,8 +466,9 @@ function appHideHandler() {
 	hideTime = new Date()
 }
 
-WXPage.C = WXPage.Comp = WXPage.Component = C
-WXPage.A = WXPage.App = WXPage.Application = Application
+Page.P = WXPage
+Page.C = Component.C = WXPage.C = WXPage.Comp = WXPage.Component = C
+Page.A = App.A = WXPage.A = WXPage.App = WXPage.Application = Application
 WXPage.redirector = redirector
 WXPage.message = message
 WXPage.cache = cache
@@ -621,9 +624,204 @@ module.exports = cache
 /* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
+var fns = __webpack_require__(0)
+var _conf = {
+	nameResolve: function () {}
+}
+module.exports = {
+	set: function (k, v) {
+		switch(k) {
+			case 'resolvePath':
+				if (fns.type(v) == 'function') {
+					_conf.customRouteResolve = v
+				}
+				break
+			case 'route':
+				let t = fns.type(v)
+				if (t == 'string' || t == 'array') {
+						let routes = (t == 'string' ? [v]:v)
+						let mainRoute = routes[0]
+						routes = routes.map(function (item) {
+							return new RegExp('^'+item
+								.replace(/^\/?/, '/?')
+								.replace(/[\.]/g, '\\.')
+								.replace('$page', '([\\w\\-]+)')
+							)
+						})
+						_conf.routeResolve = function (name) {
+							return mainRoute.replace('$page', name)
+						}
+						_conf.nameResolve = function (url) {
+							var n = ''
+							routes.some(function (reg) {
+								var m = reg.exec(url)
+								if (m) {
+									n = m[1]
+									return true
+								}
+							})
+							return n
+						}
+
+				} else {
+					console.error('Illegal routes option:', v)
+				}
+				break
+			default:
+				_conf[k] = v
+		}
+	},
+	get: function (k) {
+		return _conf[k]
+	}
+}
+
+
+
+/***/ }),
+/* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ *  Simple Pub/Sub module
+ *  @tencent/message and 减掉fns依赖
+ **/
+
+
+function Message() {
+	this._evtObjs = {};
+}
+Message.prototype.on = function (evtType, handler, _once) {
+	if (!this._evtObjs[evtType]) {
+		this._evtObjs[evtType] = [];
+	}
+	this._evtObjs[evtType].push({
+		handler: handler,
+		once: _once
+	})
+	var that = this
+	return function () {
+		that.off(evtType, handler)
+	}
+}
+Message.prototype.off = function (evtType, handler) {
+	var types;
+	if (evtType) {
+		types = [evtType];
+	} else {
+		types = Object.keys(this._evtObjs)
+	}
+	var that = this;
+	types.forEach(function (type) {
+		if (!handler) {
+			// remove all
+			that._evtObjs[type] = [];
+		} else {
+			var handlers = that._evtObjs[type] || [],
+				nextHandlers = [];
+
+			handlers.forEach(function (evtObj) {
+				if (evtObj.handler !== handler) {
+					nextHandlers.push(evtObj)
+				}
+			})
+			that._evtObjs[type] = nextHandlers;
+		}
+	})
+
+	return this;
+}
+Message.prototype.emit = function (evtType) {
+	var args = Array.prototype.slice.call(arguments, 1)
+
+	var handlers = this._evtObjs[evtType] || [];
+	handlers.forEach(function (evtObj) {
+		if (evtObj.once && evtObj.called) return
+		evtObj.called = true
+		try {
+			evtObj.handler && evtObj.handler.apply(null, args);
+		} catch(e) {
+			console.error(e.stack || e.message || e)
+		}
+	})
+}
+Message.prototype.assign = function (target) {
+	var msg = this;
+	['on', 'off', 'wait', 'emit', 'assign'].forEach(function (name) {
+		var method = msg[name]
+		target[name] = function () {
+			return method.apply(msg, arguments)
+		}
+	})
+}
+/**
+ *  Global Message Central
+ **/
+;(new Message()).assign(Message)
+module.exports = Message;
+
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+ * 对wx.navigateTo、wx.redirectTo、wx.navigateBack的包装，在它们的基础上添加了事件
+ */
+var Message = __webpack_require__(4)
+var exportee = module.exports = new Message()
+var timer, readyTimer, pending
+
+exportee.on('page:ready', function () {
+	readyTimer = setTimeout(function () {
+		pending = false
+	}, 100)
+})
+function route(type, cfg, args) {
+	if (pending) return
+	pending = true
+	clearTimeout(timer)
+	clearTimeout(readyTimer)
+	/**
+	 * 2s内避免重复的跳转
+	 */
+	timer = setTimeout(function () {
+		pending = false
+	}, 2000)
+	exportee.emit('navigateTo', cfg.url)
+
+	// 会存在不兼容接口，例如：reLaunch
+	if (wx[type]) {
+		return wx[type].apply(wx, args)
+	}
+}
+exportee.navigateTo = function (cfg) {
+	return route('navigateTo', cfg, arguments)
+}
+exportee.redirectTo = function (cfg) {
+	return route('redirectTo', cfg, arguments)
+}
+exportee.switchTab = function (cfg) {
+	return route('switchTab', cfg, arguments)
+}
+exportee.reLaunch = function (cfg) {
+	return route('reLaunch', cfg, arguments)
+}
+exportee.navigateBack = function () {
+  return wx.navigateBack.apply(wx, arguments)
+}
+
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
 var cache = __webpack_require__(2)
-var redirector = __webpack_require__(6)
-var conf = __webpack_require__(4)
+var redirector = __webpack_require__(5)
+var conf = __webpack_require__(3)
 var fns = __webpack_require__(0)
 var navigate = route({type: 'navigateTo'})
 var redirect = route({type: 'redirectTo'})
@@ -653,8 +851,8 @@ module.exports = {
 				let ref = getRef && getRef(payload.id)
 				if (!ref) return
 
-				let refName = ref.properties._ref || ref.properties.ref
-				if (refName) {
+				let refName = ref._$ref
+				if (refName && this.$refs) {
 					this.$refs[refName] = ref
 				}
 				ref._$attached(this)
@@ -793,201 +991,6 @@ function take (key) {
 
 
 /***/ }),
-/* 4 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var fns = __webpack_require__(0)
-var _conf = {
-	nameResolve: function () {}
-}
-module.exports = {
-	set: function (k, v) {
-		switch(k) {
-			case 'resolvePath':
-				if (fns.type(v) == 'function') {
-					_conf.customRouteResolve = v
-				}
-				break
-			case 'route':
-				let t = fns.type(v)
-				if (t == 'string' || t == 'array') {
-						let routes = (t == 'string' ? [v]:v)
-						let mainRoute = routes[0]
-						routes = routes.map(function (item) {
-							return new RegExp('^'+item
-								.replace(/^\/?/, '/?')
-								.replace(/[\.]/g, '\\.')
-								.replace('$page', '([\\w\\-]+)')
-							)
-						})
-						_conf.routeResolve = function (name) {
-							return mainRoute.replace('$page', name)
-						}
-						_conf.nameResolve = function (url) {
-							var n = ''
-							routes.some(function (reg) {
-								var m = reg.exec(url)
-								if (m) {
-									n = m[1]
-									return true
-								}
-							})
-							return n
-						}
-
-				} else {
-					console.error('Illegal routes option:', v)
-				}
-				break
-			default:
-				_conf[k] = v
-		}
-	},
-	get: function (k) {
-		return _conf[k]
-	}
-}
-
-
-
-/***/ }),
-/* 5 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/**
- *  Simple Pub/Sub module
- *  @tencent/message and 减掉fns依赖
- **/
-
-
-function Message() {
-	this._evtObjs = {};
-}
-Message.prototype.on = function (evtType, handler, _once) {
-	if (!this._evtObjs[evtType]) {
-		this._evtObjs[evtType] = [];
-	}
-	this._evtObjs[evtType].push({
-		handler: handler,
-		once: _once
-	})
-	var that = this
-	return function () {
-		that.off(evtType, handler)
-	}
-}
-Message.prototype.off = function (evtType, handler) {
-	var types;
-	if (evtType) {
-		types = [evtType];
-	} else {
-		types = Object.keys(this._evtObjs)
-	}
-	var that = this;
-	types.forEach(function (type) {
-		if (!handler) {
-			// remove all
-			that._evtObjs[type] = [];
-		} else {
-			var handlers = that._evtObjs[type] || [],
-				nextHandlers = [];
-
-			handlers.forEach(function (evtObj) {
-				if (evtObj.handler !== handler) {
-					nextHandlers.push(evtObj)
-				}
-			})
-			that._evtObjs[type] = nextHandlers;
-		}
-	})
-
-	return this;
-}
-Message.prototype.emit = function (evtType) {
-	var args = Array.prototype.slice.call(arguments, 1)
-
-	var handlers = this._evtObjs[evtType] || [];
-	handlers.forEach(function (evtObj) {
-		if (evtObj.once && evtObj.called) return
-		evtObj.called = true
-		try {
-			evtObj.handler && evtObj.handler.apply(null, args);
-		} catch(e) {
-			console.error(e.stack || e.message || e)
-		}
-	})
-}
-Message.prototype.assign = function (target) {
-	var msg = this;
-	['on', 'off', 'wait', 'emit', 'assign'].forEach(function (name) {
-		var method = msg[name]
-		target[name] = function () {
-			return method.apply(msg, arguments)
-		}
-	})
-}
-/**
- *  Global Message Central
- **/
-;(new Message()).assign(Message)
-module.exports = Message;
-
-
-/***/ }),
-/* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-/**
- * 对wx.navigateTo、wx.redirectTo、wx.navigateBack的包装，在它们的基础上添加了事件
- */
-var Message = __webpack_require__(5)
-var exportee = module.exports = new Message()
-var timer, readyTimer, pending
-
-exportee.on('page:ready', function () {
-	readyTimer = setTimeout(function () {
-		pending = false
-	}, 100)
-})
-function route(type, cfg, args) {
-	if (pending) return
-	pending = true
-	clearTimeout(timer)
-	clearTimeout(readyTimer)
-	/**
-	 * 2s内避免重复的跳转
-	 */
-	timer = setTimeout(function () {
-		pending = false
-	}, 2000)
-	exportee.emit('navigateTo', cfg.url)
-
-	// 会存在不兼容接口，例如：reLaunch
-	if (wx[type]) {
-		return wx[type].apply(wx, args)
-	}
-}
-exportee.navigateTo = function (cfg) {
-	return route('navigateTo', cfg, arguments)
-}
-exportee.redirectTo = function (cfg) {
-	return route('redirectTo', cfg, arguments)
-}
-exportee.switchTab = function (cfg) {
-	return route('switchTab', cfg, arguments)
-}
-exportee.reLaunch = function (cfg) {
-	return route('reLaunch', cfg, arguments)
-}
-exportee.navigateBack = function () {
-  return wx.navigateBack.apply(wx, arguments)
-}
-
-
-/***/ }),
 /* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -995,9 +998,15 @@ exportee.navigateBack = function () {
 
 
 var fns = __webpack_require__(0)
-var bridge = __webpack_require__(3)
+var bridge = __webpack_require__(6)
 var cache = __webpack_require__(2)
-var conf = __webpack_require__(4)
+var conf = __webpack_require__(3)
+var redirector = __webpack_require__(5)
+var message = __webpack_require__(4)
+var modules = {
+	fns, redirector, cache, message, dispatcher,
+	channel: bridge.channel
+}
 var dispatcher
 /**
  * Component constructor
@@ -1011,7 +1020,7 @@ function component(def) {
 	}
 	// extend page config
 	var extendComponentBefore = conf.get('extendComponentBefore')
-	extendComponentBefore && extendComponentBefore(def)
+	extendComponentBefore && extendComponentBefore(def, modules)
 
 	def.created = fns.wrapFun(def.created, function () {
 		bridge.methods(this, dispatcher)
@@ -1020,6 +1029,7 @@ function component(def) {
 		var id = ++cid
 		this.$id = id
 		refs[id] = this
+		this._$ref = this.properties.ref || this.properties._ref
 		this.triggerEvent('ing', {
 			id: this.$id,
 			type: 'attached'
@@ -1028,14 +1038,33 @@ function component(def) {
 	def.detached = fns.wrapFun(def.detached, function () {
 		delete refs[this.$id]
 		var $refs = this.$parent && this.$parent.$refs
-		var refName = this.properties.ref || this.properties._ref
-		if (refName) {
+		var refName = this._$ref
+		if (refName && $refs) {
 			delete $refs[refName]
 		}
 		this.$parent = null
 	})
 	def.properties = fns.extend({}, def.properties, {
-    'ref': String
+    'ref': {
+    	type: String,
+      value: '',
+      observer: function(next) {
+      	/**
+      	 * 支持动态 ref
+      	 */
+      	if (this._$ref !== next) {
+					var $refs = this.$parent && this.$parent.$refs
+					if ($refs) {
+						let ref = $refs[this._$ref]
+						delete $refs[this._$ref]
+						this._$ref = next
+						if (ref) {
+							$refs[next]
+						}
+					}
+      	}
+      }
+    },
 	})
 	def.methods = fns.extend({}, def.methods, {
 		// 与旧的一致
