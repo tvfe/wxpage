@@ -652,6 +652,6 @@ Page.P('{PNAME}', {
 
 ## 谁在用
 
-腾讯视频 | 王者荣耀攻略宝典 | 何润锋工作室 | 腾讯大家 | 腾讯谷雨
------------- | ------------- | ------------- | ------------- | -------------
-<img src="https://i.gtimg.cn/qqlive/images/20170301/wxapp.png" width="100"/> | <img src="https://i.gtimg.cn/qqlive/images/tinyapp_pvp_qrcode/tinyapp_pvp.jpg" width="100"/> | <img src="https://i.gtimg.cn/qqlive/images/tinyapp_qrcodes/qqnews_hrf.jpg" width="100"/> | <img src="https://user-images.githubusercontent.com/1167668/30263018-ed389e92-9705-11e7-9e10-be56d8b874da.jpg" width="100"/> | <img src="https://puui.qpic.cn/vupload/0/20180718_1531903979790.jpeg/0" width="100"/>
+腾讯视频 | 王者荣耀攻略 | 何润锋工作室 | 腾讯大家 | 腾讯谷雨 | 火箭少女101 | 瞄一眼lite
+------------ | ------------- | ------------- | ------------- | ------------- | ------------- | -------------
+<img src="https://i.gtimg.cn/qqlive/images/20170301/wxapp.png" width="90"/> | <img src="https://i.gtimg.cn/qqlive/images/tinyapp_pvp_qrcode/tinyapp_pvp.jpg" width="90"/> | <img src="https://i.gtimg.cn/qqlive/images/tinyapp_qrcodes/qqnews_hrf.jpg" width="90"/> | <img src="https://user-images.githubusercontent.com/1167668/30263018-ed389e92-9705-11e7-9e10-be56d8b874da.jpg" width="90"/> | <img src="https://puui.qpic.cn/vupload/0/20180718_1531903979790.jpeg/0" width="90"/> | <img src="https://puui.qpic.cn/vupload/0/20180820_1534748622370_g2e9zbe6yc5.jpeg/0" width="90"/> | <img src="https://puui.qpic.cn/vupload/0/20180820_1534748782775_gilgw3lger.jpeg/0" width="90"/>
