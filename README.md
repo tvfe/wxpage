@@ -52,7 +52,7 @@ const wxpage = require('/path/to/wxpage.js');
 
 - wxpage.**A**(def<`Object`>)
 
-  程序定义方法，快捷方法：
+  程序定义方法：
   ```js
   App.A({
 
@@ -61,7 +61,7 @@ const wxpage = require('/path/to/wxpage.js');
 
 - **wxpage**(def<`Object`>)
 
-  页面定义方法，快捷方法：
+  页面定义方法：
   ```js
   Page.P({
 
@@ -70,10 +70,9 @@ const wxpage = require('/path/to/wxpage.js');
 
 - wxpage.**C**(def<`Object`>)
 
-  组件定义方法
+  组件定义方法：
   ```js
-  const { A } = require('/path/to/wxpage.js')
-  A({
+  Component.C({
 
   });
   ```
