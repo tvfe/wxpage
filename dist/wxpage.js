@@ -1,5 +1,5 @@
 /*!
- * wxpage v1.1.6
+ * wxpage v1.1.7
  * https://github.com/tvfe/wxpage
  * License MIT
  */
@@ -688,7 +688,8 @@ module.exports = {
 		 */
 		ctx.$curPage = getPage
 		ctx.$curPageName = curPageName
-	}
+	},
+	getPageName
 }
 /**
  * Navigate handler
@@ -1096,6 +1097,7 @@ WXPage.redirector = redirector
 WXPage.message = message
 WXPage.cache = cache
 WXPage.fns = fns
+WXPage.getPageName = bridge.getPageName
 
 /**
  * Config handler

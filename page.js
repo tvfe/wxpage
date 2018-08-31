@@ -199,6 +199,7 @@ WXPage.redirector = redirector
 WXPage.message = message
 WXPage.cache = cache
 WXPage.fns = fns
+WXPage.getPageName = bridge.getPageName
 
 /**
  * Config handler
