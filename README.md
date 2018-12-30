@@ -42,7 +42,6 @@ npm install wxpage-cli -g
 wxpage init
 ```
 
-
 ### 类方法
 
 ```js
@@ -250,14 +249,6 @@ Component.C({
 - **$off**(key, handler)
 
   取消监听消息
-
-- **$set**(data)
-
-  等同于 `this.setData(data)`
-
-- **$data**()
-
-  等同于 `this.data`
 
 - **$call**(method, arg1, arg2[, ...])
 
