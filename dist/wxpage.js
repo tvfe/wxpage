@@ -1,5 +1,5 @@
 /*!
- * wxpage v1.1.7
+ * wxpage v1.1.8
  * https://github.com/tvfe/wxpage
  * License MIT
  */
@@ -12,9 +12,9 @@ module.exports =
 /******/ 	function __webpack_require__(moduleId) {
 /******/
 /******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId])
+/******/ 		if(installedModules[moduleId]) {
 /******/ 			return installedModules[moduleId].exports;
-/******/
+/******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = installedModules[moduleId] = {
 /******/ 			i: moduleId,
@@ -521,7 +521,7 @@ Message.prototype.emit = function (evtType) {
 }
 Message.prototype.assign = function (target) {
 	var msg = this;
-	['on', 'off', 'wait', 'emit', 'assign'].forEach(function (name) {
+	['on', 'off', 'emit', 'assign'].forEach(function (name) {
 		var method = msg[name]
 		target[name] = function () {
 			return method.apply(msg, arguments)
@@ -789,7 +789,7 @@ var refs = {}
 var cid = 0
 function component(def) {
 	if (!def) {
-		console.error(`Illegal component options [${name || 'Anonymous'}]`)
+		console.error(`Illegal component options.`)
 		def = {}
 	}
 	// extend page config

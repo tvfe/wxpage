@@ -1,5 +1,5 @@
 /*!
- * wxpage v1.1.5
+ * wxpage v1.1.8
  * https://github.com/tvfe/wxpage
  * License MIT
  */
@@ -12,9 +12,9 @@ module.exports =
 /******/ 	function __webpack_require__(moduleId) {
 /******/
 /******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId])
+/******/ 		if(installedModules[moduleId]) {
 /******/ 			return installedModules[moduleId].exports;
-/******/
+/******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = installedModules[moduleId] = {
 /******/ 			i: moduleId,
@@ -69,7 +69,7 @@ module.exports =
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 8);
+/******/ 	return __webpack_require__(__webpack_require__.s = 7);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -275,12 +275,636 @@ module.exports = fns
 
 
 var fns = __webpack_require__(0)
-var message = __webpack_require__(4)
-var redirector = __webpack_require__(5)
-var cache = __webpack_require__(2)
-var C = __webpack_require__(7)
-var bridge = __webpack_require__(6)
-var _conf = __webpack_require__(3)
+var sessionId = +new Date()
+var sessionKey = 'session_'
+console.log('[Session] Current ssid:', sessionId)
+var cache = {
+	session: {
+		set: function (k, v, asyncCB) {
+			return cache.set(sessionKey+k, v, -1*sessionId, asyncCB)
+		},
+		get: function (k, asyncCB) {
+			return cache.get(sessionKey+k, asyncCB)
+		}
+	},
+	/**
+	 * setter
+	 * @param {String} k      key
+	 * @param {Object} v      value
+	 * @param {Number} expire 过期时间，毫秒，为负数的时候表示为唯一session ID，为 true 表示保持上一次缓存时间
+	 * @param {Function} asyncCB optional, 是否异步、异步回调方法
+	 */
+	set: function (k, v, expire, asyncCB) {
+		if (fns.type(expire) == 'function') {
+			asyncCB = expire
+			expire = 0
+		} else if (asyncCB && fns.type(asyncCB) != 'function') {
+			asyncCB = noop
+		}
+		var data = {
+			expr: 0,
+			data: v
+		}
+		var expireTime
+		/**
+		 * 保持上次缓存时间
+		 */
+		if (expire === true) {
+			var _cdata = wx.getStorageSync('_cache_' + k)
+			// 上次没有缓存，本次也不更新
+			if (!_cdata) return
+			// 使用上次过期时间
+			data.expr = _cdata.expr || 0
+			expireTime = 1
+		}
+		if (!expireTime) {
+			expire = expire || 0
+			if (expire > 0) {
+				var t = + new Date()
+				expire = expire + t
+			}
+			data.expr = +expire
+		}
+		/**
+		 * 根据异步方法决定同步、异步更新
+		 */
+		if (asyncCB) {
+			wx.setStorage({
+				key: '_cache_' + k,
+				data: data,
+				success: function () {
+					asyncCB()
+				},
+				fail: function (e) {
+					asyncCB(e || `set "${k}" fail`)
+				}
+			})
+		} else {
+			wx.setStorageSync('_cache_' + k, data)
+		}
+	},
+	/**
+	 * getter
+	 * @param {String} k      key
+	 * @param {Function} asyncCB optional, 是否异步、异步回调方法
+	 */
+	get: function (k, asyncCB) {
+		if (asyncCB) {
+			if (fns.type(asyncCB) != 'function') asyncCB = noop
+			var errMsg = `get "${k}" fail`
+			wx.getStorage({
+				key: '_cache_' + k,
+				success: function (data) {
+					if (data && data.data) {
+						asyncCB(null, _resolve(k, data.data))
+					} else {
+						asyncCB(data ? data.errMsg || errMsg : errMsg)
+					}
+				},
+				fail: function (e) {
+					asyncCB(e || errMsg)
+				}
+			})
+		} else {
+			return _resolve(k, wx.getStorageSync('_cache_' + k))
+		}
+	}
+}
+function _resolve(k, v) {
+	if (!v) return null
+	// 永久存储
+	if (!v.expr) return v.data
+	else {
+		if (v.expr < 0 && -1*v.expr == sessionId) {
+			// session
+		 	return v.data
+		} else if (v.expr > 0 && new Date() < v.expr) {
+			// 普通存储
+			return v.data
+		} else {
+		 	wx.removeStorage({
+		 		key: k
+		 	})
+			return null
+		}
+	}
+}
+function noop() {}
+module.exports = cache
+
+
+/***/ }),
+/* 2 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var fns = __webpack_require__(0)
+var _conf = {
+	nameResolve: function () {}
+}
+module.exports = {
+	set: function (k, v) {
+		switch(k) {
+			case 'resolvePath':
+				if (fns.type(v) == 'function') {
+					_conf.customRouteResolve = v
+				}
+				break
+			case 'route':
+				let t = fns.type(v)
+				if (t == 'string' || t == 'array') {
+						let routes = (t == 'string' ? [v]:v)
+						let mainRoute = routes[0]
+						routes = routes.map(function (item) {
+							return new RegExp('^'+item
+								.replace(/^\/?/, '/?')
+								.replace(/[\.]/g, '\\.')
+								.replace('$page', '([\\w\\-]+)')
+							)
+						})
+						_conf.routeResolve = function (name) {
+							return mainRoute.replace('$page', name)
+						}
+						_conf.nameResolve = function (url) {
+							var n = ''
+							routes.some(function (reg) {
+								var m = reg.exec(url)
+								if (m) {
+									n = m[1]
+									return true
+								}
+							})
+							return n
+						}
+
+				} else {
+					console.error('Illegal routes option:', v)
+				}
+				break
+			default:
+				_conf[k] = v
+		}
+	},
+	get: function (k) {
+		return _conf[k]
+	}
+}
+
+
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ *  Simple Pub/Sub module
+ *  @tencent/message and 减掉fns依赖
+ **/
+
+
+function Message() {
+	this._evtObjs = {};
+}
+Message.prototype.on = function (evtType, handler, _once) {
+	if (!this._evtObjs[evtType]) {
+		this._evtObjs[evtType] = [];
+	}
+	this._evtObjs[evtType].push({
+		handler: handler,
+		once: _once
+	})
+	var that = this
+	return function () {
+		that.off(evtType, handler)
+	}
+}
+Message.prototype.off = function (evtType, handler) {
+	var types;
+	if (evtType) {
+		types = [evtType];
+	} else {
+		types = Object.keys(this._evtObjs)
+	}
+	var that = this;
+	types.forEach(function (type) {
+		if (!handler) {
+			// remove all
+			that._evtObjs[type] = [];
+		} else {
+			var handlers = that._evtObjs[type] || [],
+				nextHandlers = [];
+
+			handlers.forEach(function (evtObj) {
+				if (evtObj.handler !== handler) {
+					nextHandlers.push(evtObj)
+				}
+			})
+			that._evtObjs[type] = nextHandlers;
+		}
+	})
+
+	return this;
+}
+Message.prototype.emit = function (evtType) {
+	var args = Array.prototype.slice.call(arguments, 1)
+
+	var handlers = this._evtObjs[evtType] || [];
+	handlers.forEach(function (evtObj) {
+		if (evtObj.once && evtObj.called) return
+		evtObj.called = true
+		try {
+			evtObj.handler && evtObj.handler.apply(null, args);
+		} catch(e) {
+			console.error(e.stack || e.message || e)
+		}
+	})
+}
+Message.prototype.assign = function (target) {
+	var msg = this;
+	['on', 'off', 'emit', 'assign'].forEach(function (name) {
+		var method = msg[name]
+		target[name] = function () {
+			return method.apply(msg, arguments)
+		}
+	})
+}
+/**
+ *  Global Message Central
+ **/
+;(new Message()).assign(Message)
+module.exports = Message;
+
+
+/***/ }),
+/* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+/**
+ * 对wx.navigateTo、wx.redirectTo、wx.navigateBack的包装，在它们的基础上添加了事件
+ */
+var Message = __webpack_require__(3)
+var exportee = module.exports = new Message()
+var timer, readyTimer, pending
+
+exportee.on('page:ready', function () {
+	readyTimer = setTimeout(function () {
+		pending = false
+	}, 100)
+})
+function route(type, cfg, args) {
+	if (pending) return
+	pending = true
+	clearTimeout(timer)
+	clearTimeout(readyTimer)
+	/**
+	 * 2s内避免重复的跳转
+	 */
+	timer = setTimeout(function () {
+		pending = false
+	}, 2000)
+	exportee.emit('navigateTo', cfg.url)
+
+	// 会存在不兼容接口，例如：reLaunch
+	if (wx[type]) {
+		return wx[type].apply(wx, args)
+	}
+}
+exportee.navigateTo = function (cfg) {
+	return route('navigateTo', cfg, arguments)
+}
+exportee.redirectTo = function (cfg) {
+	return route('redirectTo', cfg, arguments)
+}
+exportee.switchTab = function (cfg) {
+	return route('switchTab', cfg, arguments)
+}
+exportee.reLaunch = function (cfg) {
+	return route('reLaunch', cfg, arguments)
+}
+exportee.navigateBack = function () {
+  return wx.navigateBack.apply(wx, arguments)
+}
+
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var cache = __webpack_require__(1)
+var redirector = __webpack_require__(4)
+var conf = __webpack_require__(2)
+var fns = __webpack_require__(0)
+var navigate = route({type: 'navigateTo'})
+var redirect = route({type: 'redirectTo'})
+var switchTab = route({type: 'switchTab'})
+var reLaunch = route({type: 'reLaunch'})
+var routeMethods = {navigate, redirect, switchTab, reLaunch}
+var bindNavigate = clickDelegate('navigate')
+var bindRedirect = clickDelegate('redirect')
+var bindSwitch = clickDelegate('switchTab')
+var bindReLaunch = clickDelegate('reLaunch')
+var channel = {}
+var dispatcher
+var getRef
+
+module.exports = {
+	channel,
+	dispatcher: function (d) {
+		dispatcher = d
+	},
+	ref: function (fn) {
+		getRef = fn
+	},
+	mount: function (e) {
+		var payload = e.detail
+		switch(payload.type) {
+			case 'attached':
+				let ref = getRef && getRef(payload.id)
+				if (!ref) return
+
+				let refName = ref._$ref
+				if (refName && this.$refs) {
+					this.$refs[refName] = ref
+				}
+				ref._$attached(this)
+				break
+			case 'event:call':
+				let method = this[payload.method]
+				method && method.apply(this, payload.args)
+			default:
+				break
+		}
+	},
+	redirectDelegate: function (emitter, dispatcher) {
+		;['navigateTo', 'redirectTo', 'switchTab', 'reLaunch'].forEach(function (k) {
+			emitter.on(k, function (url) {
+				var name = getPageName(url)
+				name && dispatcher.emit(k+':'+name, url, fns.queryParse(url.split('?')[1]))
+			})
+		})
+	},
+	methods: function (ctx) {
+		/**
+		 * 缓存
+		 */
+		ctx.$cache = cache
+		ctx.$session = cache.session
+		/**
+		 * 存一次，取一次
+		 */
+		ctx.$put = put
+		/**
+		 * 只能被取一次
+		 */
+		ctx.$take = take
+		/**
+		 * 实例引用集合
+		 */
+		ctx.$refs = {}
+
+		/**
+		 * 路由方法
+		 */
+		ctx.$route = ctx.$navigate = navigate
+		ctx.$redirect = redirect
+		ctx.$switch = switchTab
+		ctx.$launch = reLaunch
+		ctx.$back = back
+		/**
+		 * 页面预加载
+		 */
+		ctx.$preload = preload
+		/**
+		 * 点击跳转代理
+		 */
+		ctx.$bindRoute = ctx.$bindNavigate = bindNavigate
+		ctx.$bindRedirect = bindRedirect
+		ctx.$bindSwitch = bindSwitch
+		ctx.$bindReLaunch = bindReLaunch
+		/**
+		 * 页面信息
+		 */
+		ctx.$curPage = getPage
+		ctx.$curPageName = curPageName
+	},
+	getPageName
+}
+/**
+ * Navigate handler
+ */
+function route ({type}) {
+	// url: $page[?name=value]
+	return function (url, config) {
+		var parts = url.split(/\?/)
+		var pagepath = parts[0]
+		if (/^[\w\-]+$/.test(pagepath)) {
+			pagepath = (conf.get('customRouteResolve') || conf.get('routeResolve'))(pagepath)
+		}
+		if (!pagepath) {
+			throw new Error('Invalid path:', pagepath)
+		}
+		config = config || {}
+		// append querystring
+		config.url = pagepath + (parts[1] ? '?' + parts[1] : '')
+		redirector[type](config)
+	}
+}
+
+function clickDelegate(type) {
+	var _route = routeMethods[type]
+	return function (e) {
+		if (!e) return
+		var dataset = e.currentTarget.dataset
+		var before = dataset.before
+		var after = dataset.after
+		var url = dataset.url
+		var ctx = this
+		try {
+			if (ctx && before && ctx[before]) ctx[before].call(ctx, e)
+		} finally {
+			if (!url) return
+			_route(url)
+			if (ctx && after && ctx[after]) ctx[after].call(ctx, e)
+		}
+	}
+}
+
+function back(delta) {
+	wx.navigateBack({
+		delta: delta || 1
+	})
+}
+function preload(url){
+	var name = getPageName(url)
+	name && dispatcher && dispatcher.emit('preload:'+name, url, fns.queryParse(url.split('?')[1]))
+}
+function getPage() {
+	return getCurrentPages().slice(0).pop()
+}
+function getPageName(url) {
+	var m = /^[\w\-]+(?=\?|$)/.exec(url)
+	return m ? m[0] : conf.get('nameResolve')(url)
+}
+function curPageName () {
+	var route = getPage().route
+	if (!route) return ''
+	return getPageName(route)
+}
+function put (key, value) {
+	channel[key] = value
+	return this
+}
+function take (key) {
+	var v = channel[key]
+	// 释放引用
+	channel[key] = null
+	return v
+}
+
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var fns = __webpack_require__(0)
+var bridge = __webpack_require__(5)
+var cache = __webpack_require__(1)
+var conf = __webpack_require__(2)
+var redirector = __webpack_require__(4)
+var message = __webpack_require__(3)
+var modules = {
+	fns, redirector, cache, message, dispatcher,
+	channel: bridge.channel
+}
+var dispatcher
+/**
+ * Component constructor
+ */
+var refs = {}
+var cid = 0
+function component(def) {
+	if (!def) {
+		console.error(`Illegal component options.`)
+		def = {}
+	}
+	// extend page config
+	var extendComponentBefore = conf.get('extendComponentBefore')
+	extendComponentBefore && extendComponentBefore(def, modules)
+
+	def.created = fns.wrapFun(def.created, function () {
+		bridge.methods(this, dispatcher)
+	})
+	def.attached = fns.wrapFun(def.attached, function () {
+		var id = ++cid
+		this.$id = id
+		refs[id] = this
+		this._$ref = this.properties.ref || this.properties._ref
+		this.triggerEvent('ing', {
+			id: this.$id,
+			type: 'attached'
+		})
+	})
+	def.detached = fns.wrapFun(def.detached, function () {
+		delete refs[this.$id]
+		var $refs = this.$parent && this.$parent.$refs
+		var refName = this._$ref
+		if (refName && $refs) {
+			delete $refs[refName]
+		}
+		this.$parent = null
+	})
+	def.properties = fns.extend({}, def.properties, {
+    'ref': {
+    	type: String,
+      value: '',
+      observer: function(next) {
+      	/**
+      	 * 支持动态 ref
+      	 */
+      	if (this._$ref !== next) {
+					var $refs = this.$parent && this.$parent.$refs
+					if ($refs) {
+						let ref = $refs[this._$ref]
+						delete $refs[this._$ref]
+						this._$ref = next
+						if (ref && next) {
+							$refs[next]
+						}
+					}
+      	}
+      }
+    },
+	})
+	def.methods = fns.extend({}, def.methods, {
+		// 与旧的一致
+		$set: function () {
+			return this.setData.apply(this, arguments)
+		},
+		$data: function () {
+			return this.data
+		},
+		$emit: function () {
+			if (!dispatcher) return
+			return dispatcher.emit.apply(dispatcher, arguments)
+		},
+		$on: function () {
+			if (!dispatcher) return function () {}
+			return dispatcher.on.apply(dispatcher, arguments)
+		},
+		$off: function () {
+			if (!dispatcher) return
+			return dispatcher.off.apply(dispatcher, arguments)
+		},
+		$call: function (method) {
+			var args = [].slice.call(arguments, 1)
+			this.triggerEvent('ing', {
+				id: this.$id,
+				type: 'event:call',
+				method,
+				args
+			})
+		},
+		/**
+		 * 由父组件调用
+		 */
+		_$attached: function (parent) {
+			this.$root = parent.$root || parent
+			this.$parent = parent
+		},
+		$: bridge.mount
+	})
+	Component(def)
+}
+component.getRef = function (id) {
+	return refs[id]
+}
+bridge.ref(component.getRef)
+component.dispatcher = function (d) {
+	dispatcher = d
+}
+Component.C = component
+module.exports = component
+
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var fns = __webpack_require__(0)
+var message = __webpack_require__(3)
+var redirector = __webpack_require__(4)
+var cache = __webpack_require__(1)
+var C = __webpack_require__(6)
+var bridge = __webpack_require__(5)
+var _conf = __webpack_require__(2)
 var dispatcher = new message()
 var hasPageLoaded = 0
 var isAppLaunched = 0
@@ -473,6 +1097,7 @@ WXPage.redirector = redirector
 WXPage.message = message
 WXPage.cache = cache
 WXPage.fns = fns
+WXPage.getPageName = bridge.getPageName
 
 /**
  * Config handler
@@ -492,637 +1117,6 @@ message.assign(WXPage)
 message.assign(C)
 message.assign(Application)
 module.exports = WXPage
-
-
-/***/ }),
-/* 2 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var fns = __webpack_require__(0)
-var sessionId = +new Date()
-var sessionKey = 'session_'
-console.log('[Session] Current ssid:', sessionId)
-var cache = {
-	session: {
-		set: function (k, v, asyncCB) {
-			return cache.set(sessionKey+k, v, -1*sessionId, asyncCB)
-		},
-		get: function (k, asyncCB) {
-			return cache.get(sessionKey+k, asyncCB)
-		}
-	},
-	/**
-	 * setter
-	 * @param {String} k      key
-	 * @param {Object} v      value
-	 * @param {Number} expire 过期时间，毫秒，为负数的时候表示为唯一session ID，为 true 表示保持上一次缓存时间
-	 * @param {Function} asyncCB optional, 是否异步、异步回调方法
-	 */
-	set: function (k, v, expire, asyncCB) {
-		if (fns.type(expire) == 'function') {
-			asyncCB = expire
-			expire = 0
-		} else if (asyncCB && fns.type(asyncCB) != 'function') {
-			asyncCB = noop
-		}
-		var data = {
-			expr: 0,
-			data: v
-		}
-		var expireTime
-		/**
-		 * 保持上次缓存时间
-		 */
-		if (expire === true) {
-			var _cdata = wx.getStorageSync('_cache_' + k)
-			// 上次没有缓存，本次也不更新
-			if (!_cdata) return
-			// 使用上次过期时间
-			data.expr = _cdata.expr || 0
-			expireTime = 1
-		}
-		if (!expireTime) {
-			expire = expire || 0
-			if (expire > 0) {
-				var t = + new Date()
-				expire = expire + t
-			}
-			data.expr = +expire
-		}
-		/**
-		 * 根据异步方法决定同步、异步更新
-		 */
-		if (asyncCB) {
-			wx.setStorage({
-				key: '_cache_' + k,
-				data: data,
-				success: function () {
-					asyncCB()
-				},
-				fail: function (e) {
-					asyncCB(e || `set "${k}" fail`)
-				}
-			})
-		} else {
-			wx.setStorageSync('_cache_' + k, data)
-		}
-	},
-	/**
-	 * getter
-	 * @param {String} k      key
-	 * @param {Function} asyncCB optional, 是否异步、异步回调方法
-	 */
-	get: function (k, asyncCB) {
-		if (asyncCB) {
-			if (fns.type(asyncCB) != 'function') asyncCB = noop
-			var errMsg = `get "${k}" fail`
-			wx.getStorage({
-				key: '_cache_' + k,
-				success: function (data) {
-					if (data && data.data) {
-						asyncCB(null, _resolve(k, data.data))
-					} else {
-						asyncCB(data ? data.errMsg || errMsg : errMsg)
-					}
-				},
-				fail: function (e) {
-					asyncCB(e || errMsg)
-				}
-			})
-		} else {
-			return _resolve(k, wx.getStorageSync('_cache_' + k))
-		}
-	}
-}
-function _resolve(k, v) {
-	if (!v) return null
-	// 永久存储
-	if (!v.expr) return v.data
-	else {
-		if (v.expr < 0 && -1*v.expr == sessionId) {
-			// session
-		 	return v.data
-		} else if (v.expr > 0 && new Date() < v.expr) {
-			// 普通存储
-			return v.data
-		} else {
-		 	wx.removeStorage({
-		 		key: k
-		 	})
-			return null
-		}
-	}
-}
-function noop() {}
-module.exports = cache
-
-
-/***/ }),
-/* 3 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var fns = __webpack_require__(0)
-var _conf = {
-	nameResolve: function () {}
-}
-module.exports = {
-	set: function (k, v) {
-		switch(k) {
-			case 'resolvePath':
-				if (fns.type(v) == 'function') {
-					_conf.customRouteResolve = v
-				}
-				break
-			case 'route':
-				let t = fns.type(v)
-				if (t == 'string' || t == 'array') {
-						let routes = (t == 'string' ? [v]:v)
-						let mainRoute = routes[0]
-						routes = routes.map(function (item) {
-							return new RegExp('^'+item
-								.replace(/^\/?/, '/?')
-								.replace(/[\.]/g, '\\.')
-								.replace('$page', '([\\w\\-]+)')
-							)
-						})
-						_conf.routeResolve = function (name) {
-							return mainRoute.replace('$page', name)
-						}
-						_conf.nameResolve = function (url) {
-							var n = ''
-							routes.some(function (reg) {
-								var m = reg.exec(url)
-								if (m) {
-									n = m[1]
-									return true
-								}
-							})
-							return n
-						}
-
-				} else {
-					console.error('Illegal routes option:', v)
-				}
-				break
-			default:
-				_conf[k] = v
-		}
-	},
-	get: function (k) {
-		return _conf[k]
-	}
-}
-
-
-
-/***/ }),
-/* 4 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/**
- *  Simple Pub/Sub module
- *  @tencent/message and 减掉fns依赖
- **/
-
-
-function Message() {
-	this._evtObjs = {};
-}
-Message.prototype.on = function (evtType, handler, _once) {
-	if (!this._evtObjs[evtType]) {
-		this._evtObjs[evtType] = [];
-	}
-	this._evtObjs[evtType].push({
-		handler: handler,
-		once: _once
-	})
-	var that = this
-	return function () {
-		that.off(evtType, handler)
-	}
-}
-Message.prototype.off = function (evtType, handler) {
-	var types;
-	if (evtType) {
-		types = [evtType];
-	} else {
-		types = Object.keys(this._evtObjs)
-	}
-	var that = this;
-	types.forEach(function (type) {
-		if (!handler) {
-			// remove all
-			that._evtObjs[type] = [];
-		} else {
-			var handlers = that._evtObjs[type] || [],
-				nextHandlers = [];
-
-			handlers.forEach(function (evtObj) {
-				if (evtObj.handler !== handler) {
-					nextHandlers.push(evtObj)
-				}
-			})
-			that._evtObjs[type] = nextHandlers;
-		}
-	})
-
-	return this;
-}
-Message.prototype.emit = function (evtType) {
-	var args = Array.prototype.slice.call(arguments, 1)
-
-	var handlers = this._evtObjs[evtType] || [];
-	handlers.forEach(function (evtObj) {
-		if (evtObj.once && evtObj.called) return
-		evtObj.called = true
-		try {
-			evtObj.handler && evtObj.handler.apply(null, args);
-		} catch(e) {
-			console.error(e.stack || e.message || e)
-		}
-	})
-}
-Message.prototype.assign = function (target) {
-	var msg = this;
-	['on', 'off', 'wait', 'emit', 'assign'].forEach(function (name) {
-		var method = msg[name]
-		target[name] = function () {
-			return method.apply(msg, arguments)
-		}
-	})
-}
-/**
- *  Global Message Central
- **/
-;(new Message()).assign(Message)
-module.exports = Message;
-
-
-/***/ }),
-/* 5 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-/**
- * 对wx.navigateTo、wx.redirectTo、wx.navigateBack的包装，在它们的基础上添加了事件
- */
-var Message = __webpack_require__(4)
-var exportee = module.exports = new Message()
-var timer, readyTimer, pending
-
-exportee.on('page:ready', function () {
-	readyTimer = setTimeout(function () {
-		pending = false
-	}, 100)
-})
-function route(type, cfg, args) {
-	if (pending) return
-	pending = true
-	clearTimeout(timer)
-	clearTimeout(readyTimer)
-	/**
-	 * 2s内避免重复的跳转
-	 */
-	timer = setTimeout(function () {
-		pending = false
-	}, 2000)
-	exportee.emit('navigateTo', cfg.url)
-
-	// 会存在不兼容接口，例如：reLaunch
-	if (wx[type]) {
-		return wx[type].apply(wx, args)
-	}
-}
-exportee.navigateTo = function (cfg) {
-	return route('navigateTo', cfg, arguments)
-}
-exportee.redirectTo = function (cfg) {
-	return route('redirectTo', cfg, arguments)
-}
-exportee.switchTab = function (cfg) {
-	return route('switchTab', cfg, arguments)
-}
-exportee.reLaunch = function (cfg) {
-	return route('reLaunch', cfg, arguments)
-}
-exportee.navigateBack = function () {
-  return wx.navigateBack.apply(wx, arguments)
-}
-
-
-/***/ }),
-/* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var cache = __webpack_require__(2)
-var redirector = __webpack_require__(5)
-var conf = __webpack_require__(3)
-var fns = __webpack_require__(0)
-var navigate = route({type: 'navigateTo'})
-var redirect = route({type: 'redirectTo'})
-var switchTab = route({type: 'switchTab'})
-var reLaunch = route({type: 'reLaunch'})
-var routeMethods = {navigate, redirect, switchTab, reLaunch}
-var bindNavigate = clickDelegate('navigate')
-var bindRedirect = clickDelegate('redirect')
-var bindSwitch = clickDelegate('switchTab')
-var bindReLaunch = clickDelegate('reLaunch')
-var channel = {}
-var dispatcher
-var getRef
-
-module.exports = {
-	channel,
-	dispatcher: function (d) {
-		dispatcher = d
-	},
-	ref: function (fn) {
-		getRef = fn
-	},
-	mount: function (e) {
-		var payload = e.detail
-		switch(payload.type) {
-			case 'attached':
-				let ref = getRef && getRef(payload.id)
-				if (!ref) return
-
-				let refName = ref._$ref
-				if (refName && this.$refs) {
-					this.$refs[refName] = ref
-				}
-				ref._$attached(this)
-				break
-			case 'event:call':
-				let method = this[payload.method]
-				method && method.apply(this, payload.args)
-			default:
-				break
-		}
-	},
-	redirectDelegate: function (emitter, dispatcher) {
-		;['navigateTo', 'redirectTo', 'switchTab', 'reLaunch'].forEach(function (k) {
-			emitter.on(k, function (url) {
-				var name = getPageName(url)
-				name && dispatcher.emit(k+':'+name, url, fns.queryParse(url.split('?')[1]))
-			})
-		})
-	},
-	methods: function (ctx) {
-		/**
-		 * 缓存
-		 */
-		ctx.$cache = cache
-		ctx.$session = cache.session
-		/**
-		 * 存一次，取一次
-		 */
-		ctx.$put = put
-		/**
-		 * 只能被取一次
-		 */
-		ctx.$take = take
-		/**
-		 * 实例引用集合
-		 */
-		ctx.$refs = {}
-
-		/**
-		 * 路由方法
-		 */
-		ctx.$route = ctx.$navigate = navigate
-		ctx.$redirect = redirect
-		ctx.$switch = switchTab
-		ctx.$launch = reLaunch
-		ctx.$back = back
-		/**
-		 * 页面预加载
-		 */
-		ctx.$preload = preload
-		/**
-		 * 点击跳转代理
-		 */
-		ctx.$bindRoute = ctx.$bindNavigate = bindNavigate
-		ctx.$bindRedirect = bindRedirect
-		ctx.$bindSwitch = bindSwitch
-		ctx.$bindReLaunch = bindReLaunch
-		/**
-		 * 页面信息
-		 */
-		ctx.$curPage = getPage
-		ctx.$curPageName = curPageName
-	}
-}
-/**
- * Navigate handler
- */
-function route ({type}) {
-	// url: $page[?name=value]
-	return function (url, config) {
-		var parts = url.split(/\?/)
-		var pagepath = parts[0]
-		if (/^[\w\-]+$/.test(pagepath)) {
-			pagepath = (conf.get('customRouteResolve') || conf.get('routeResolve'))(pagepath)
-		}
-		if (!pagepath) {
-			throw new Error('Invalid path:', pagepath)
-		}
-		config = config || {}
-		// append querystring
-		config.url = pagepath + (parts[1] ? '?' + parts[1] : '')
-		redirector[type](config)
-	}
-}
-
-function clickDelegate(type) {
-	var _route = routeMethods[type]
-	return function (e) {
-		if (!e) return
-		var dataset = e.currentTarget.dataset
-		var before = dataset.before
-		var after = dataset.after
-		var url = dataset.url
-		var ctx = this
-		try {
-			if (ctx && before && ctx[before]) ctx[before].call(ctx, e)
-		} finally {
-			if (!url) return
-			_route(url)
-			if (ctx && after && ctx[after]) ctx[after].call(ctx, e)
-		}
-	}
-}
-
-function back(delta) {
-	wx.navigateBack({
-		delta: delta || 1
-	})
-}
-function preload(url){
-	var name = getPageName(url)
-	name && dispatcher && dispatcher.emit('preload:'+name, url, fns.queryParse(url.split('?')[1]))
-}
-function getPage() {
-	return getCurrentPages().slice(0).pop()
-}
-function getPageName(url) {
-	var m = /^[\w\-]+(?=\?|$)/.exec(url)
-	return m ? m[0] : conf.get('nameResolve')(url)
-}
-function curPageName () {
-	var route = getPage().route
-	if (!route) return ''
-	return getPageName(route)
-}
-function put (key, value) {
-	channel[key] = value
-	return this
-}
-function take (key) {
-	var v = channel[key]
-	// 释放引用
-	channel[key] = null
-	return v
-}
-
-
-/***/ }),
-/* 7 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var fns = __webpack_require__(0)
-var bridge = __webpack_require__(6)
-var cache = __webpack_require__(2)
-var conf = __webpack_require__(3)
-var redirector = __webpack_require__(5)
-var message = __webpack_require__(4)
-var modules = {
-	fns, redirector, cache, message, dispatcher,
-	channel: bridge.channel
-}
-var dispatcher
-/**
- * Component constructor
- */
-var refs = {}
-var cid = 0
-function component(def) {
-	if (!def) {
-		console.error(`Illegal component options [${name || 'Anonymous'}]`)
-		def = {}
-	}
-	// extend page config
-	var extendComponentBefore = conf.get('extendComponentBefore')
-	extendComponentBefore && extendComponentBefore(def, modules)
-
-	def.created = fns.wrapFun(def.created, function () {
-		bridge.methods(this, dispatcher)
-	})
-	def.attached = fns.wrapFun(def.attached, function () {
-		var id = ++cid
-		this.$id = id
-		refs[id] = this
-		this._$ref = this.properties.ref || this.properties._ref
-		this.triggerEvent('ing', {
-			id: this.$id,
-			type: 'attached'
-		})
-	})
-	def.detached = fns.wrapFun(def.detached, function () {
-		delete refs[this.$id]
-		var $refs = this.$parent && this.$parent.$refs
-		var refName = this._$ref
-		if (refName && $refs) {
-			delete $refs[refName]
-		}
-		this.$parent = null
-	})
-	def.properties = fns.extend({}, def.properties, {
-    'ref': {
-    	type: String,
-      value: '',
-      observer: function(next) {
-      	/**
-      	 * 支持动态 ref
-      	 */
-      	if (this._$ref !== next) {
-					var $refs = this.$parent && this.$parent.$refs
-					if ($refs) {
-						let ref = $refs[this._$ref]
-						delete $refs[this._$ref]
-						this._$ref = next
-						if (ref && next) {
-							$refs[next]
-						}
-					}
-      	}
-      }
-    },
-	})
-	def.methods = fns.extend({}, def.methods, {
-		// 与旧的一致
-		$set: function () {
-			return this.setData.apply(this, arguments)
-		},
-		$data: function () {
-			return this.data
-		},
-		$emit: function () {
-			if (!dispatcher) return
-			return dispatcher.emit.apply(dispatcher, arguments)
-		},
-		$on: function () {
-			if (!dispatcher) return function () {}
-			return dispatcher.on.apply(dispatcher, arguments)
-		},
-		$off: function () {
-			if (!dispatcher) return
-			return dispatcher.off.apply(dispatcher, arguments)
-		},
-		$call: function (method) {
-			var args = [].slice.call(arguments, 1)
-			this.triggerEvent('ing', {
-				id: this.$id,
-				type: 'event:call',
-				method,
-				args
-			})
-		},
-		/**
-		 * 由父组件调用
-		 */
-		_$attached: function (parent) {
-			this.$root = parent.$root || parent
-			this.$parent = parent
-		},
-		$: bridge.mount
-	})
-	Component(def)
-}
-component.getRef = function (id) {
-	return refs[id]
-}
-bridge.ref(component.getRef)
-component.dispatcher = function (d) {
-	dispatcher = d
-}
-Component.C = component
-module.exports = component
-
-
-/***/ }),
-/* 8 */
-/***/ (function(module, exports, __webpack_require__) {
-
-__webpack_require__(1);
-module.exports = __webpack_require__(1);
 
 
 /***/ })
