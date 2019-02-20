@@ -650,3 +650,10 @@ Page.P('{PNAME}', {
 <img src="https://i.gtimg.cn/qqlive/images/20170301/wxapp.png" width="120"/> | <img src="https://i.gtimg.cn/qqlive/images/tinyapp_pvp_qrcode/tinyapp_pvp.jpg" width="120"/> | <img src="https://i.gtimg.cn/qqlive/images/tinyapp_qrcodes/qqnews_hrf.jpg" width="120"/> | <img src="https://user-images.githubusercontent.com/1167668/30263018-ed389e92-9705-11e7-9e10-be56d8b874da.jpg" width="120"/> | <img src="https://puui.qpic.cn/vupload/0/20180718_1531903979790.jpeg/0" width="120"/> | <img src="https://puui.qpic.cn/vupload/0/20180820_1534748622370_g2e9zbe6yc5.jpeg/0" width="120"/>
 **瞄一眼lite** | **草场地** |  **头牌观点**  |  **拾音方音乐餐厅**  |  **doki小程序**  | **布谷FM**
 <img src="https://puui.qpic.cn/vupload/0/20180820_1534748782775_gilgw3lger.jpeg/0" width="120"/> | <img src="https://puui.qpic.cn/vupload/0/20181106_1541470112040_l8m9zl035bk.jpeg/0" width="120"/> | <img src="https://puui.qpic.cn/vupload/0/20181113_1542095648919_4ngc3w21zrj.jpeg/0" width="120"/> | <img src="https://puui.qpic.cn/vupload/0/20181126_1543223003666_2wddxhh568j.jpeg/0" width="120"/>  | <img src="https://puui.qpic.cn/vupload/0/20181128_1543406923871_7796gdsnrlr.jpeg/0" width="120"/>  | <img src="https://puui.qpic.cn/vupload/0/20181220_1545281515659_bos5rs64m8f.jpeg/0" width="120"/>
+**腾讯视频-亲情版本** |
+------------ | ---
+<img src="https://puui.qpic.cn/fans_admin/0/1_906755289_1544527076870/0" width="120"/> |
+
+
+
+
