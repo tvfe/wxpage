@@ -1,5 +1,5 @@
 /*!
- * wxpage v1.1.8
+ * wxpage v1.1.9
  * https://github.com/tvfe/wxpage
  * License MIT
  */
@@ -285,6 +285,9 @@ var cache = {
 		},
 		get: function (k, asyncCB) {
 			return cache.get(sessionKey+k, asyncCB)
+		},
+		remove: function (k, asyncCB) {
+			return cache.remove(sessionKey+k, asyncCB)
 		}
 	},
 	/**
@@ -367,6 +370,23 @@ var cache = {
 			})
 		} else {
 			return _resolve(k, wx.getStorageSync('_cache_' + k))
+		}
+	},
+	remove: function (k, asyncCB) {
+		if (asyncCB) {
+			if (fns.type(asyncCB) != 'function') asyncCB = noop
+			var errMsg = `remove "${k}" fail`
+			wx.removeStorage({
+				key: '_cache_' + k,
+				success: function () {
+					asyncCB(null, true)
+				},
+				fail: function (e) {
+					asyncCB(e || errMsg)
+				}
+			})
+		} else {
+			return _resolve(k, wx.removeStorageSync('_cache_' + k))
 		}
 	}
 }
