@@ -459,6 +459,8 @@ Page.P('{PNAME}', {
     * `cb`      可选，异步写的时候回调，接收参数：cb(err), err不为空代表失败。
   - `get(key[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
     * `cb`      可选，异步读的时候回调，接收参数：cb(err, data), err不为空代表失败。
+  - `remove(key[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
+    * `cb`      可选，异步删除的时候回调，接收参数：cb(err, data), err不为空代表失败。
 
   ```js
   Page.P({
