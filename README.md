@@ -506,6 +506,7 @@ Page.P('{PNAME}', {
 
   - `set(key, value[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
   - `get(key[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
+  - `remove(key[, cb])` 如果传 `cb` 参数，会使用异步模式并回调
   ```js
   Page({
     onLoad: function () {
