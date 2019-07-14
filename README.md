@@ -406,7 +406,7 @@ Page.P('{PNAME}', {
 
 - **onAppShow(opts)**
 
-  App.onShow 触发时调用。
+  App.onShow 第一次触发时调用。只会触发一次，需要多次调用的请使用原生的 App.onShow
   opts:
   - `path`  String  打开小程序的路径
   - `query` Object  打开小程序的query
