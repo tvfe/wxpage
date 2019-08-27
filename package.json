@@ -5,12 +5,14 @@
   "main": "page.js",
   "scripts": {
     "start": "webpack page.js --output-path test/tinyapp/lib/  --output-filename wxpage.js --watch --output-library-target='commonjs-module'",
-    "test": "mocha test/index",
+    "test": "npx mocha test/index",
     "r": "webpack --config webpack.config.js"
   },
   "author": "vfe",
   "license": "MIT",
+  "typings": "./index.d.ts",
   "devDependencies": {
-    "webpack": "^2.2.1"
+    "webpack": "^2.2.1",
+    "miniprogram-api-typings": "^2.8.0-2"
   }
 }
