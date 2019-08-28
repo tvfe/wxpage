@@ -2,7 +2,7 @@
  * @Author: Mr.Hope
  * @Date: 2019-08-14 22:13:31
  * @LastEditors: Mr.Hope
- * @LastEditTime: 2019-08-28 00:37:28
+ * @LastEditTime: 2019-08-28 17:16:04
  * @Description: WXPage声明文件
  */
 
@@ -332,15 +332,22 @@ declare namespace WXPage {
      * 获取当前页面实例。取 getCurrentPages 的最后一个项。
      * 
      * @returns 当前页面的页面名
+     * > 请注意:
+     * >
+     * > 由于实现中调用了`getCurrentPages`，在主包的`onPageLaunch`、`onAppLaunch`生命周期调用无效。
+     * > 因为此时 `page` 还没有生成。
      */
     $curPage(): PageInstance;
 
     /**
      * 获取当前页面实例对应的页面名。根据`AppOption.config.route`的配置解析当前页面实例的`route`
      *
-     * Notice: 由于基础库1.2.0以下不支持 `Page.prototype.route` ，只能取到空字符串
-     * 
      * @returns 当前页面的页面名
+     * > 请注意:
+     * >
+     * >由于基础库1.2.0以下不支持 `Page.prototype.route` ，只能取到空字符串
+     * > 由于实现中调用了`getCurrentPages`，在主包的`onPageLaunch`、`onAppLaunch`生命周期调用无效。
+     * > 因为此时 `page` 还没有生成。     *
      */
     $curPageName(): string;
   }
@@ -417,6 +424,8 @@ declare namespace WXPage {
 
     /** 页面与页面内组件间的事件监听 */
     $emitter: Emitter;
+
+    $cache: Cache;
 
     // TODO: Remove
     $session: Cache;
@@ -513,26 +522,26 @@ declare namespace WXPage {
        * 自定义扩展页面，在框架执行扩展之前
        *
        * @param name 页面名称
-       * @param def pageoption
+       * @param pageoption 页面构建选项对象
        * @param modules 内置模块
        */
-      extendPageBefore?(name: string, def: PageOption, modules: any): void;
+      extendPageBefore?(name: string, pageoption: PageOption, modules: any): void;
 
       /**
        * 自定义扩展页面，在框架执行扩展之后
        *
        * @param name 页面名称
-       * @param def pageoption
+       * @param pageoption 页面构建选项对象
        * @param modules 内置模块
        */
-      extendPageAfter?(name: string, def: PageOption, modules: any): void;
+      extendPageAfter?(name: string, pageoption: PageOption, modules: any): void;
 
       /**
        * 自定义扩展组件，在框架执行扩展之前。例如为每个组件挂在一个实例方法
        *
-       * @param def pageoption
+       * @param componentoption 组件构建选项对象
        */
-      extendComponentBefore?(def: any): void;
+      extendComponentBefore?(componentoption: any): void;
     };
 
     /**

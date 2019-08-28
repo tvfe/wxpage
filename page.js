@@ -22,8 +22,12 @@ C.dispatcher(dispatcher)
 function WXPage(name, option) {
 	if (fns.type(name) == 'object') {
 		option = name
-		name = option.name || '_unknow'
-	}
+		name = option.name || '_unknow''
+  }
+
+  // make $name options work
+  option.$name = name;
+
 	// page internal message
 	var emitter = new message()
 
