@@ -133,6 +133,9 @@ A({
 
 > route 支持数组，为多项路由的时候，必须搭配 `resolvePath` 使用，否则默认采用第一项作为路径还原。
 
+- **routeFrozenTime** `可选`
+
+  限制两次路由跳转的时间间隔，默认为 `1000`，可为 `0`
 
 - **resolvePath(name`<String>`)** `可选`
 
